@@ -10,7 +10,7 @@
 
 <script>
 // GitHub-a 25 MB-dan böyük fayl brauzerdən yüklənmir: index.wasm sıxılmış saxlanır, burada açılır.
-(function(){const BB_V='42b2e556';const f=window.fetch;window.fetch=function(u,o){const s=String(u&&u.url||u);const p=s.split('?')[0];if(p.endsWith('index.pck')){return f('index.pck?v='+BB_V,o);}if(p.endsWith('index.wasm')){return f('index.wasm.gz?v='+BB_V,o).then(r=>{if(!r.ok)return r;const b=r.body.pipeThrough(new DecompressionStream('gzip'));return new Response(b,{status:200,headers:{'Content-Type':'application/wasm'}});});}return f(u,o);};})();
+(function(){const BB_V='1060fa75';const f=window.fetch;window.fetch=function(u,o){const s=String(u&&u.url||u);const p=s.split('?')[0];if(p.endsWith('index.pck')){return f('index.pck?v='+BB_V,o);}if(p.endsWith('index.wasm')){return f('index.wasm.gz?v='+BB_V,o).then(r=>{if(!r.ok)return r;const b=r.body.pipeThrough(new DecompressionStream('gzip'));return new Response(b,{status:200,headers:{'Content-Type':'application/wasm'}});});}return f(u,o);};})();
 </script>
 
 		<meta charset="utf-8">
@@ -123,7 +123,7 @@ body {
 
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":4176520,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":4176680,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
