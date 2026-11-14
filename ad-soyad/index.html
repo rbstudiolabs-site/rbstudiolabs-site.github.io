@@ -189,7 +189,7 @@
       <ul>
         <li>Ev sahibi çarxı fırladır, bir hərf gəlir.</li>
         <li>Hamı həmin hərflə <b>ad, soyad, şəhər, əşya, heyvan</b> yazır.</li>
-        <li>Hamısını ilk dolduran <b>“Bitirdim!”</b> basır — vaxt dərhal dayanır, kim nə yazıbsa o hesablanır.</li>
+        <li>Hamısını dolduran <b>“Bitirdim!”</b> basa bilər — onun cavabları kilidlənir. Tur isə yalnız vaxt bitəndə bitir.</li>
         <li><span class="badge b15">15</span> o xanaya yalnız sən yazmısan</li>
         <li><span class="badge b10">10</span> sözün başqalarınınkından fərqlidir</li>
         <li><span class="badge b5">5</span> eyni sözü başqası da yazıb</li>
@@ -239,7 +239,7 @@
     <div id="finalBox" hidden></div>
   </section>
 </div>
-<p class="muted" style="text-align:center; font-size:12px; margin-top:14px">Versiya 7</p>
+<p class="muted" style="text-align:center; font-size:12px; margin-top:14px">Versiya 8</p>
 <div id="toast" class="hide"></div>
 
 <script>
@@ -262,7 +262,7 @@ const norm = s => lower(String(s || '').trim().replace(/\s+/g, ' '));
 const key = s => norm(s).replace(/ı/g, 'i').replace(/[-\s'’`]/g, '');   // I/İ, defis və boşluq fərqini bağışlayırıq
 
 /* ---------- Lüğət yoxlaması ---------- */
-const VERSION = '7';
+const VERSION = '8';
 let LUGAT = null, lugatState = 'none';   // none | loading | ok | error
 function loadLugat(){
   if (lugatState === 'loading' || lugatState === 'ok') return;
@@ -361,10 +361,13 @@ function readAnswers(){
   return a;
 }
 function clearFields(){ document.querySelectorAll('#fields input').forEach(i => i.value = ''); }
+function iAmDone(){ return !!(S && S.done && S.done.includes(myId)); }
 function updateFinishBtn(){
   const a = readAnswers();
   const all = CATS.every(([k]) => a[k]);
-  $('#btnFinish').disabled = !(S && S.phase === 'playing' && all);
+  const done = iAmDone();
+  $('#btnFinish').disabled = !(S && S.phase === 'playing' && (all || done));
+  $('#btnFinish').textContent = done ? '✏️ Düzəliş et' : '✋ Bitirdim!';
 }
 function scheduleSend(){ clearTimeout(sendTimer); sendTimer = setTimeout(sendAnswers, 350); }
 function sendAnswers(final){
@@ -379,7 +382,10 @@ function sendFinal(){
   sendAnswers(true);
   setTimeout(() => sendAnswers(true), 700);   // ehtiyat üçün bir daha
 }
-$('#btnFinish').onclick = () => { toHost({ t:'finish', round:S.round, a:readAnswers() }); };
+$('#btnFinish').onclick = () => {
+  if (iAmDone()) toHost({ t:'undo', round:S.round });
+  else { const el = document.activeElement; if (el && el.blur) el.blur(); toHost({ t:'finish', round:S.round, a:readAnswers() }); }
+};
 $('#fields').addEventListener('change', scheduleSend);
 $('#fields').addEventListener('compositionend', scheduleSend);
 
@@ -528,13 +534,17 @@ function hostHandle(pid, m){
     if (p) toast(p.name + ' yenidən oynamaq istəyir');
     commit();
   }
-  else if (m.t === 'finish'){
-    if (H.phase !== 'playing') return;
-    if (m.a && m.round === H.round){ storeAnswers(pid, m.a); }
-    H.got = {}; H.got[pid] = true;
-    const p = H.players.find(p => p.id === pid);
-    H.stopBy = p ? p.name : '?';
-    endRound();
+  else if (m.t === 'finish'){            // oyunçu bitirdi: cavabları kilidlənir, tur isə vaxt bitənə qədər davam edir
+    if (H.phase !== 'playing' || m.round !== H.round) return;
+    if (m.a) storeAnswers(pid, m.a);
+    H.done = H.done || [];
+    if (!H.done.includes(pid)) H.done.push(pid);
+    commit();
+  }
+  else if (m.t === 'undo'){              // düzəliş etmək istəyir
+    if (H.phase !== 'playing' || !H.done) return;
+    H.done = H.done.filter(id => id !== pid);
+    commit();
   }
 }
 function storeAnswers(pid, raw){
@@ -572,7 +582,7 @@ function hostSpin(){
   const jitter = (Math.random() - .5) * a * .6;
   H.spin = { id:Date.now() + Math.random(), rot: prev + 360 * 6 + target + jitter };
   H.round += 1; H.letter = L; H.used.push(L);
-  H.answers = {}; H.got = {}; H.override = {}; H.results = null; H.stopBy = null; H.frozen = null;
+  H.answers = {}; H.got = {}; H.done = []; H.override = {}; H.results = null; H.stopBy = null; H.frozen = null;
   H.roundPlayers = H.players.filter(p => p.online).map(p => p.id);
   H.phase = 'spinning'; H.timer = null; clearTimeout(hostTimer);
   commit();
@@ -640,7 +650,7 @@ function hostNewGame(){
   clearTimeout(hostTimer);
   H.players.forEach(p => p.score = 0);
   H.round = 0; H.used = []; H.letter = null; H.results = null; H.answers = {}; H.got = {};
-  H.override = {}; H.timer = null; H.stopBy = null; H.frozen = null; H.again = [];
+  H.override = {}; H.timer = null; H.stopBy = null; H.frozen = null; H.again = []; H.done = [];
   H.phase = 'lobby';
   commit();
   toast('Yeni oyun başladı 🔄');
@@ -699,7 +709,7 @@ function render(){
   // Oyunçular
   const sorted = S.players.slice().sort((a,b) => b.score - a.score);
   $('#players').innerHTML = sorted.map(p =>
-    `<span class="chip ${p.id === myId ? 'me' : ''} ${p.online ? '' : 'off'}">${p.host ? '👑 ' : ''}${esc(p.name)}<span class="sc">${p.score}</span></span>`).join('');
+    `<span class="chip ${p.id === myId ? 'me' : ''} ${p.online ? '' : 'off'}">${p.host ? '👑 ' : ''}${esc(p.name)}${S.phase === 'playing' && (S.done || []).includes(p.id) ? ' ✔' : ''}<span class="sc">${p.score}</span></span>`).join('');
 
   const ph = S.phase;
   const showWheel = ['lobby','ready','spinning'].includes(ph);
@@ -745,13 +755,16 @@ function render(){
   // Yazı vərəqi
   if (!$('#playBox').hidden){
     $('#bigLetter').textContent = S.letter;
-    const editable = ph === 'playing' || ph === 'stopping';
+    const editable = (ph === 'playing' || ph === 'stopping') && !iAmDone();
     document.querySelectorAll('#fields input').forEach(i => {
       i.disabled = !editable;
       i.placeholder = editable ? S.letter + '...' : '';
     });
     const sb = $('#stopBanner');
-    if (ph === 'collecting'){ sb.hidden = false; sb.textContent = S.stopBy ? `✋ ${S.stopBy} bitirdi — vaxt dayandı! Xallar hesablanır...` : '⏰ Vaxt bitdi! Xallar hesablanır...'; }
+    const doneNames = (S.done || []).map(id => (S.players.find(p => p.id === id) || {}).name).filter(Boolean);
+    if (ph === 'collecting'){ sb.hidden = false; sb.textContent = '⏰ Vaxt bitdi! Xallar hesablanır...'; }
+    else if (iAmDone()){ sb.hidden = false; sb.textContent = '✔ Bitirdin! Vaxt bitənə qədər gözlə. Fikrini dəyişsən, “Düzəliş et”i bas.'; }
+    else if (doneNames.length){ sb.hidden = false; sb.textContent = `✋ Bitirənlər: ${doneNames.join(', ')} — sən də tələs!`; }
     else sb.hidden = true;
     $('#btnFinish').hidden = ph !== 'playing';
     updateFinishBtn();
@@ -767,7 +780,7 @@ function renderReview(){
   const name = id => { const p = S.players.find(p => p.id === id); return p ? p.name : '?'; };
   const bc = p => 'b' + p;
   let h = `<h2>“${esc(S.letter)}” hərfi — nəticələr</h2>
-    ${S.stopBy ? `<p class="muted">✋ <b>${esc(S.stopBy)}</b> bitirdi, vaxt ${S.frozen} saniyədə dayandı.</p>` : `<p class="muted">⏰ Vaxt bitdi.</p>`}
+    <p class="muted">⏰ Vaxt bitdi.${(S.done || []).length ? ` İlk bitirən: <b>${esc((S.players.find(p => p.id === S.done[0]) || {}).name || '?')}</b>` : ''}</p>
     <div class="tableWrap"><table><thead><tr><th>Oyunçu</th>${CATS.map(([,l])=>`<th>${l}</th>`).join('')}<th>Cəm</th></tr></thead><tbody>`;
   for (const id of R.ids){
     h += `<tr><td class="name">${esc(name(id))}${(R.noAns || []).includes(id) ? '<span class="why">cavab gəlmədi</span>' : ''}</td>`;
