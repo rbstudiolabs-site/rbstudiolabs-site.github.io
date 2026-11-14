@@ -238,7 +238,7 @@
     <div id="finalBox" hidden></div>
   </section>
 </div>
-<p class="muted" style="text-align:center; font-size:12px; margin-top:14px">Lüğət: <a href="https://github.com/mozillaz/spellchecker" style="color:inherit">Mozilla Azərbaycan</a> (MPL-2.0)</p>
+<p class="muted" style="text-align:center; font-size:12px; margin-top:14px">Versiya 3 · Lüğət: <a href="https://github.com/mozillaz/spellchecker" style="color:inherit">Mozilla Azərbaycan</a> (MPL-2.0)</p>
 <div id="toast" class="hide"></div>
 
 <script>
@@ -261,18 +261,23 @@ const norm = s => lower(String(s || '').trim().replace(/\s+/g, ' '));
 const key = s => norm(s).replace(/ı/g, 'i').replace(/[-\s'’`]/g, '');   // I/İ, defis və boşluq fərqini bağışlayırıq
 
 /* ---------- Lüğət yoxlaması ---------- */
-let LUGAT = null;
+const VERSION = '3';
+let LUGAT = null, lugatState = 'none';   // none | loading | ok | error
 function loadLugat(){
-  return fetch('lugat.json').then(r => r.json()).then(d => {
-    LUGAT = {};
-    for (const k of ['soz','ad','seher','heyvan']) LUGAT[k] = new Set(d[k].map(key));
-  }).catch(() => { LUGAT = null; toast('Lüğət yüklənmədi — sözlər yalnız hərfə görə yoxlanacaq', 4000); });
+  if (lugatState === 'loading' || lugatState === 'ok') return;
+  lugatState = 'loading'; if (S) render();
+  fetch('lugat.json?v=' + VERSION, { cache:'no-cache' }).then(r => { if (!r.ok) throw 0; return r.json(); }).then(d => {
+    const L = {};
+    for (const k of ['soz','ad','seher','heyvan']) L[k] = new Set(d[k].map(key));
+    LUGAT = L; lugatState = 'ok';
+  }).catch(() => { lugatState = 'error'; toast('Lüğət yüklənmədi. İnterneti yoxla.', 4000); })
+    .finally(() => { if (S) render(); });
 }
 const SURNAME_SUFFIX = ['bəyova','bəyov','bəyli','xanlı','zadə','oğlu','yeva','ova','eva','yev','ov','ev','li','lı','lu','lü'];
 function inDict(cat, w){
   const k = key(w);
   if (k.length < 2) return false;
-  if (!LUGAT) return true;
+  if (!LUGAT) return false;
   if (cat === 'ad') return LUGAT.ad.has(k);
   if (cat === 'seher') return LUGAT.seher.has(k);
   if (cat === 'heyvan') return LUGAT.heyvan.has(k);
@@ -511,6 +516,7 @@ function startTimer(ms, cb){
 }
 function hostSpin(){
   if (!['lobby','ready'].includes(H.phase)) return;
+  if (lugatState !== 'ok'){ toast('Lüğət hələ yüklənməyib'); loadLugat(); return; }
   let pool = LETTERS.filter(L => !H.used.includes(L));
   if (!pool.length){ H.used = []; pool = LETTERS.slice(); }
   const L = pool[Math.floor(Math.random() * pool.length)];
@@ -632,7 +638,8 @@ function render(){
   if (!S) return;
   const me = S.players.find(p => p.id === myId);
   // Tur məlumatı
-  if (!lost) $('#status').innerHTML = `Tur <b>${S.round || 0}/${S.totalRounds}</b> · ${PH_TEXT[S.phase] || ''}`;
+  if (!lost) $('#status').innerHTML = `Tur <b>${S.round || 0}/${S.totalRounds}</b> · ${PH_TEXT[S.phase] || ''}` +
+    (isHost ? ` · <span title="Lüğət">${lugatState === 'ok' ? '📖✓' : lugatState === 'error' ? '📖✗' : '📖…'}</span>` : '');
 
   // Oyunçular
   const sorted = S.players.slice().sort((a,b) => b.score - a.score);
@@ -667,7 +674,15 @@ function render(){
     if (ph !== 'spinning') $('#hub').textContent = S.letter || '?';
     $('#lobbyMsg').innerHTML = msg;
     $('#wheelCtl').innerHTML = ctl;
-    const b = $('#btnSpin'); if (b) b.onclick = hostSpin;
+    const b = $('#btnSpin');
+    if (b){
+      b.onclick = hostSpin;
+      if (lugatState !== 'ok'){
+        b.disabled = lugatState === 'loading';
+        b.textContent = lugatState === 'error' ? 'Lüğət yüklənmədi — yenidən cəhd et' : 'Lüğət yüklənir...';
+        if (lugatState === 'error') b.onclick = loadLugat;
+      }
+    }
     const r = $('#setRounds'); if (r) r.onchange = () => { H.totalRounds = +r.value; commit(); };
     const t = $('#setTime'); if (t) t.onchange = () => { H.timeLimit = +t.value; commit(); };
   }
