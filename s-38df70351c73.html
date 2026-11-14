@@ -156,7 +156,25 @@ function stop(keepStatus) {
   if (!keepStatus) statusEl.textContent = 'Dayandırılıb';
 }
 
-btn.onclick = () => listening ? stop() : start();
+// Səhifə açılan kimi mikrofon icazəsi soruşulsun
+async function askMic() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return true;
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+    s.getTracks().forEach(t => t.stop());
+    statusEl.textContent = '✅ Mikrofona icazə verildi. "▶ Başla" basın.';
+    return true;
+  } catch (e) {
+    statusEl.textContent = '⚠️ Mikrofona icazə verilmədi. Ünvan sətrindəki 🔒 işarəsinə basıb mikrofonu "İcazə ver" edin, sonra səhifəni yeniləyin.';
+    return false;
+  }
+}
+window.addEventListener('load', () => { statusEl.textContent = '🎤 Ekranda çıxan bildirişdə mikrofona icazə verin...'; askMic(); });
+
+btn.onclick = async () => {
+  if (listening) return stop();
+  if (await askMic()) start();
+};
 document.getElementById('test').onclick = beep;
 </script>
 </body>
