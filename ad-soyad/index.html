@@ -193,7 +193,7 @@
         <li><span class="badge b10">10</span> sözün başqalarınınkından fərqlidir</li>
         <li><span class="badge b5">5</span> eyni sözü başqası da yazıb</li>
         <li><span class="badge b0">0</span> boş, səhv hərf, lüğətdə olmayan və ya xətlənmiş söz</li>
-        <li>Hər söz Azərbaycan dili lüğəti ilə yoxlanır (ad, şəhər, heyvan — ayrıca siyahılarla). Tək hərf qəbul olunmur.</li>
+        <li>Hər söz öz sütununa uyğun olmalıdır: “Ad”a yalnız insan adı, “Əşya”ya yalnız əşya və s. Məsələn, “Sap” əşyadır, ad kimi qəbul olunmur; “Ağac” əşya deyil.</li>
       </ul>
     </div>
   </section>
@@ -238,7 +238,7 @@
     <div id="finalBox" hidden></div>
   </section>
 </div>
-<p class="muted" style="text-align:center; font-size:12px; margin-top:14px">Versiya 3 · Lüğət: <a href="https://github.com/mozillaz/spellchecker" style="color:inherit">Mozilla Azərbaycan</a> (MPL-2.0)</p>
+<p class="muted" style="text-align:center; font-size:12px; margin-top:14px">Versiya 4</p>
 <div id="toast" class="hide"></div>
 
 <script>
@@ -261,14 +261,14 @@ const norm = s => lower(String(s || '').trim().replace(/\s+/g, ' '));
 const key = s => norm(s).replace(/ı/g, 'i').replace(/[-\s'’`]/g, '');   // I/İ, defis və boşluq fərqini bağışlayırıq
 
 /* ---------- Lüğət yoxlaması ---------- */
-const VERSION = '3';
+const VERSION = '4';
 let LUGAT = null, lugatState = 'none';   // none | loading | ok | error
 function loadLugat(){
   if (lugatState === 'loading' || lugatState === 'ok') return;
   lugatState = 'loading'; if (S) render();
   fetch('lugat.json?v=' + VERSION, { cache:'no-cache' }).then(r => { if (!r.ok) throw 0; return r.json(); }).then(d => {
     const L = {};
-    for (const k of ['soz','ad','seher','heyvan']) L[k] = new Set(d[k].map(key));
+    for (const k of ['esya','soyadkok','ad','seher','heyvan']) L[k] = new Set(d[k].map(key));
     LUGAT = L; lugatState = 'ok';
   }).catch(() => { lugatState = 'error'; toast('Lüğət yüklənmədi. İnterneti yoxla.', 4000); })
     .finally(() => { if (S) render(); });
@@ -281,12 +281,13 @@ function inDict(cat, w){
   if (cat === 'ad') return LUGAT.ad.has(k);
   if (cat === 'seher') return LUGAT.seher.has(k);
   if (cat === 'heyvan') return LUGAT.heyvan.has(k);
-  if (cat === 'esya') return LUGAT.soz.has(k);
+  if (cat === 'esya') return LUGAT.esya.has(k);
   if (cat === 'soyad'){
     for (const suf of SURNAME_SUFFIX){
       if (k.length > suf.length + 1 && k.endsWith(suf)){
         const stem = k.slice(0, -suf.length);
-        if (LUGAT.ad.has(stem) || LUGAT.soz.has(stem) || LUGAT.seher.has(stem)) return true;
+        if (LUGAT.ad.has(stem) || LUGAT.soyadkok.has(stem)) return true;
+        if (['li','lı','lu','lü'].includes(suf) && LUGAT.seher.has(stem)) return true;   // Şirvanlı, Gəncəli
       }
     }
     return false;
@@ -555,7 +556,7 @@ function computeResults(){
       let st, why = '';
       if (!w) st = 'empty';
       else if (!startsWith(w, H.letter)){ st = ov ? 'ok' : 'bad'; why = 'hərf səhv'; }
-      else if (!inDict(k, w)){ st = ov ? 'ok' : 'bad'; why = 'lüğətdə yoxdur'; }
+      else if (!inDict(k, w)){ st = ov ? 'ok' : 'bad'; why = 'bu sütuna uyğun deyil'; }
       else { st = ov ? 'rej' : 'ok'; if (ov) why = 'xətləndi'; }
       cells[id][k] = { w, st, p:0, why };
       if (st === 'ok') valid.push(id);
@@ -727,8 +728,8 @@ function renderReview(){
   }
   h += `</tbody></table></div>
     <div class="legend"><span class="badge b15">15</span>tək &nbsp; <span class="badge b10">10</span>fərqli &nbsp; <span class="badge b5">5</span>eyni &nbsp; <span class="badge b0">0</span>boş / səhv<br>
-    Sözlər Azərbaycan dili lüğəti, adlar, şəhərlər və heyvanlar siyahısı ilə avtomatik yoxlanır.<br>
-    ${isHost ? 'Səhv qəbul olunan sözə toxunsan, xətlənir (0 xal). Lüğətdə olmayan, amma düzgün sözə toxunsan, qəbul olunur.' : 'Ev sahibi səhv sözləri xətləyə, lüğətdə olmayan düzgün sözləri qəbul edə bilər.'}</div>`;
+    Hər söz öz sütununun siyahısı ilə yoxlanır: ad — adlar, şəhər — şəhərlər, əşya — əşyalar, heyvan — heyvanlar.<br>
+    ${isHost ? 'Səhv qəbul olunan sözə toxunsan, xətlənir (0 xal). Siyahıda olmayan, amma düzgün sözə toxunsan, qəbul olunur.' : 'Ev sahibi səhv sözləri xətləyə, siyahıda olmayan düzgün sözləri qəbul edə bilər.'}</div>`;
   h += isHost
     ? `<div class="row"><button class="primary big" id="btnConfirm">✔ Xalları yaz${S.round >= S.totalRounds ? ' və bitir' : ' və davam et'}</button></div>`
     : `<p class="muted">Ev sahibi xalları təsdiqləyir...</p>`;
