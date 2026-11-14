@@ -238,7 +238,7 @@
     <div id="finalBox" hidden></div>
   </section>
 </div>
-<p class="muted" style="text-align:center; font-size:12px; margin-top:14px">Versiya 4</p>
+<p class="muted" style="text-align:center; font-size:12px; margin-top:14px">Versiya 5</p>
 <div id="toast" class="hide"></div>
 
 <script>
@@ -261,7 +261,7 @@ const norm = s => lower(String(s || '').trim().replace(/\s+/g, ' '));
 const key = s => norm(s).replace(/ı/g, 'i').replace(/[-\s'’`]/g, '');   // I/İ, defis və boşluq fərqini bağışlayırıq
 
 /* ---------- Lüğət yoxlaması ---------- */
-const VERSION = '4';
+const VERSION = '5';
 let LUGAT = null, lugatState = 'none';   // none | loading | ok | error
 function loadLugat(){
   if (lugatState === 'loading' || lugatState === 'ok') return;
@@ -269,10 +269,12 @@ function loadLugat(){
   fetch('lugat.json?v=' + VERSION, { cache:'no-cache' }).then(r => { if (!r.ok) throw 0; return r.json(); }).then(d => {
     const L = {};
     for (const k of ['esya','soyadkok','ad','seher','heyvan']) L[k] = new Set(d[k].map(key));
+    L.stemFold = new Set([...L.ad, ...L.soyadkok].map(fold));
     LUGAT = L; lugatState = 'ok';
   }).catch(() => { lugatState = 'error'; toast('Lüğət yüklənmədi. İnterneti yoxla.', 4000); })
     .finally(() => { if (S) render(); });
 }
+const fold = k => k.replace(/ə/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u');   // Qədir ~ Qadir
 const SURNAME_SUFFIX = ['bəyova','bəyov','bəyli','xanlı','zadə','oğlu','yeva','ova','eva','yev','ov','ev','li','lı','lu','lü'];
 function inDict(cat, w){
   const k = key(w);
@@ -286,7 +288,7 @@ function inDict(cat, w){
     for (const suf of SURNAME_SUFFIX){
       if (k.length > suf.length + 1 && k.endsWith(suf)){
         const stem = k.slice(0, -suf.length);
-        if (LUGAT.ad.has(stem) || LUGAT.soyadkok.has(stem)) return true;
+        if (LUGAT.ad.has(stem) || LUGAT.soyadkok.has(stem) || LUGAT.stemFold.has(fold(stem))) return true;
         if (['li','lı','lu','lü'].includes(suf) && LUGAT.seher.has(stem)) return true;   // Şirvanlı, Gəncəli
       }
     }
