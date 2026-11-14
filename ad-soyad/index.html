@@ -87,7 +87,8 @@
   /* Çarx */
   .stageMsg{text-align:center; margin-bottom:6px}
   .wheelWrap{position:relative; width:min(330px,78vw); aspect-ratio:1; margin:22px auto 24px}
-  .wheelSpin{width:100%; height:100%; transition:transform 4.3s cubic-bezier(.12,.68,.1,1)}
+  .wheelSpin{width:100%; height:100%; transition:transform 4.3s cubic-bezier(.12,.68,.1,1); pointer-events:none}
+  .wheelWrap{pointer-events:none}
   .wheelSpin svg{width:100%; height:100%; display:block}
   .pointer{position:absolute; left:50%; top:-12px; margin-left:-14px; z-index:2; width:0; height:0;
            border-left:14px solid transparent; border-right:14px solid transparent; border-top:28px solid var(--red)}
@@ -202,7 +203,7 @@
   <section id="game" hidden>
     <div class="bar">
       <div class="row">Otaq <span class="code" id="roomCode">-----</span> <button class="link" id="btnShare">dəvət et</button></div>
-      <div class="status" id="status"></div>
+      <div class="row" style="gap:6px"><span class="status" id="status"></span><button class="link" id="btnRestart" hidden>↻ yenidən başla</button></div>
     </div>
     <div class="players" id="players"></div>
 
@@ -238,7 +239,7 @@
     <div id="finalBox" hidden></div>
   </section>
 </div>
-<p class="muted" style="text-align:center; font-size:12px; margin-top:14px">Versiya 6</p>
+<p class="muted" style="text-align:center; font-size:12px; margin-top:14px">Versiya 7</p>
 <div id="toast" class="hide"></div>
 
 <script>
@@ -261,7 +262,7 @@ const norm = s => lower(String(s || '').trim().replace(/\s+/g, ' '));
 const key = s => norm(s).replace(/ı/g, 'i').replace(/[-\s'’`]/g, '');   // I/İ, defis və boşluq fərqini bağışlayırıq
 
 /* ---------- Lüğət yoxlaması ---------- */
-const VERSION = '6';
+const VERSION = '7';
 let LUGAT = null, lugatState = 'none';   // none | loading | ok | error
 function loadLugat(){
   if (lugatState === 'loading' || lugatState === 'ok') return;
@@ -519,6 +520,14 @@ function hostHandle(pid, m){
     storeAnswers(pid, m.a);
     if (m.final && H.phase === 'collecting'){ H.got[pid] = true; checkCollected(); }
   }
+  else if (m.t === 'again'){
+    if (H.phase !== 'final') return;
+    H.again = H.again || [];
+    if (!H.again.includes(pid)) H.again.push(pid);
+    const p = H.players.find(p => p.id === pid);
+    if (p) toast(p.name + ' yenidən oynamaq istəyir');
+    commit();
+  }
   else if (m.t === 'finish'){
     if (H.phase !== 'playing') return;
     if (m.a && m.round === H.round){ storeAnswers(pid, m.a); }
@@ -628,9 +637,13 @@ function hostConfirm(){
   commit();
 }
 function hostNewGame(){
+  clearTimeout(hostTimer);
   H.players.forEach(p => p.score = 0);
-  H.round = 0; H.used = []; H.letter = null; H.results = null; H.answers = {}; H.phase = 'lobby';
+  H.round = 0; H.used = []; H.letter = null; H.results = null; H.answers = {}; H.got = {};
+  H.override = {}; H.timer = null; H.stopBy = null; H.frozen = null; H.again = [];
+  H.phase = 'lobby';
   commit();
+  toast('Yeni oyun başladı 🔄');
 }
 function commit(){
   if (H.timer) H.timer.ms = Math.max(0, hostEnd - Date.now());
@@ -680,6 +693,9 @@ function render(){
   if (!lost) $('#status').innerHTML = `Tur <b>${S.round || 0}/${S.totalRounds}</b> · ${PH_TEXT[S.phase] || ''}` +
     (isHost ? ` · <span title="Lüğət">${lugatState === 'ok' ? '📖✓' : lugatState === 'error' ? '📖✗' : '📖…'}</span>` : '');
 
+  // Yenidən başla (ev sahibi, istənilən vaxt)
+  const rb = $('#btnRestart');
+  rb.hidden = !isHost || S.phase === 'lobby';
   // Oyunçular
   const sorted = S.players.slice().sort((a,b) => b.score - a.score);
   $('#players').innerHTML = sorted.map(p =>
@@ -786,12 +802,17 @@ function renderFinal(){
   h += `<ol class="rank">` + sorted.map((p,i) => `<li><span>${medal[i] || (i+1)+'.'} ${esc(p.name)}</span><span>${p.score} xal</span></li>`).join('') + `</ol>`;
   h += isHost
     ? `<div class="row"><label style="font-weight:700">Tur sayı: <select id="setRounds2">${[3,5,7,10,15].map(n=>`<option ${n===S.totalRounds?'selected':''}>${n}</option>`).join('')}</select></label>
-       <button class="primary big" id="btnNew">Yeni oyun</button></div>`
-    : `<p class="muted">Ev sahibi yeni oyun başlada bilər.</p>`;
+       <button class="primary big" id="btnNew">🔄 Yenidən oyna</button></div>
+       ${(S.again || []).length ? `<p class="muted">Yenidən oynamaq istəyənlər: ${S.again.map(id => esc((S.players.find(p => p.id === id) || {}).name || '?')).join(', ')}</p>` : ''}`
+    : ((S.again || []).includes(myId)
+        ? `<p class="muted">✔ İstəyin göndərildi. Ev sahibi yeni oyunu başladanda avtomatik başlayacaq.</p>`
+        : `<div class="row"><button class="primary big" id="btnAgain">🔄 Yenidən oynamaq istəyirəm</button></div>`);
   $('#finalBox').innerHTML = h;
   if (isHost){
     $('#btnNew').onclick = hostNewGame;
     $('#setRounds2').onchange = e => { H.totalRounds = +e.target.value; commit(); };
+  } else {
+    const ba = $('#btnAgain'); if (ba) ba.onclick = () => toHost({ t:'again' });
   }
 }
 
@@ -810,6 +831,13 @@ function tick(){
 setInterval(tick, 250);
 
 /* ---------- Düymələr ---------- */
+let restartArm = 0;
+$('#btnRestart').onclick = () => {
+  const b = $('#btnRestart');
+  if (Date.now() - restartArm < 3000){ restartArm = 0; b.textContent = '↻ yenidən başla'; hostNewGame(); return; }
+  restartArm = Date.now(); b.textContent = 'əminsən? bir də bas';
+  setTimeout(() => { if (Date.now() - restartArm >= 3000) b.textContent = '↻ yenidən başla'; }, 3100);
+};
 $('#btnCreate').onclick = createRoom;
 $('#btnJoin').onclick = joinRoom;
 $('#joinCode').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
