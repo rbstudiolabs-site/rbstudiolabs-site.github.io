@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ad · Soyad · Şəhər · Əşya · Heyvan — onlayn oyun</title>
+<meta name="description" content="Dostlarla onlayn Ad Soyad Şəhər Əşya Heyvan oyunu. Çarxı fırlat, hərfi tap, yaz!">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+  :root{
+    --ink:#1f2d63; --ink2:#3a4a8a; --red:#d2363b; --line:#b4cfe9; --margin:#f0a3a3;
+    --paper:#fffdf5; --desk:#d9cfb8; --yellow:#fff08a; --pink:#ffc9dc; --blue:#c6e6ff; --green:#cdf2c2;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:'Caveat','Segoe Print','Comic Sans MS',cursive;
+    font-size:23px; color:var(--ink); line-height:32px;
+    background:var(--desk);
+    background-image:radial-gradient(rgba(0,0,0,.05) 1px,transparent 1px);
+    background-size:6px 6px;
+    min-height:100vh; padding:14px 8px 40px;
+  }
+  .sheet{
+    position:relative; max-width:900px; margin:0 auto; min-height:calc(100vh - 60px);
+    padding:16px 22px 48px 78px;
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(90deg,transparent 58px,var(--margin) 58px,var(--margin) 60px,transparent 60px),
+      repeating-linear-gradient(180deg,transparent 0 31px,var(--line) 31px 32px);
+    background-position:0 8px;
+    box-shadow:0 1px 1px rgba(0,0,0,.15),0 10px 0 -5px #f6f2e4,0 10px 1px -4px rgba(0,0,0,.15),0 20px 0 -10px #efe9d6,0 20px 1px -9px rgba(0,0,0,.15),0 18px 40px rgba(0,0,0,.18);
+    border-radius:2px 2px 4px 4px;
+  }
+  .sheet::before{ /* dəlik-dəlik dəftər kənarı */
+    content:""; position:absolute; left:18px; top:0; bottom:0; width:20px;
+    background:radial-gradient(circle at 10px 10px,var(--desk) 7px,rgba(0,0,0,.18) 8px,transparent 9px) 0 40px/20px 110px repeat-y;
+  }
+  h1{font-size:44px; line-height:64px; margin:0 0 0; font-weight:700; letter-spacing:.5px}
+  h1 .dot{color:var(--red)}
+  h2{font-size:34px; line-height:64px; margin:0; font-weight:700}
+  p{margin:0 0 32px}
+  .sub{color:var(--ink2); margin:0 0 32px; font-size:22px}
+  [hidden]{display:none!important}
+
+  /* Əl ilə çəkilmiş düymələr */
+  button,.btn{
+    font:inherit; font-weight:700; font-size:24px; color:var(--ink); cursor:pointer;
+    background:var(--yellow); padding:4px 20px; line-height:30px; min-height:44px;
+    border:2.5px solid var(--ink);
+    border-radius:255px 15px 225px 15px/15px 225px 15px 255px;
+    box-shadow:2px 3px 0 var(--ink); transition:transform .08s, box-shadow .08s;
+  }
+  button:hover{transform:translate(-1px,-1px) rotate(-.5deg); box-shadow:3px 4px 0 var(--ink)}
+  button:active{transform:translate(2px,3px); box-shadow:0 0 0 var(--ink)}
+  button:disabled{opacity:.45; cursor:not-allowed; transform:none; box-shadow:1px 1px 0 var(--ink)}
+  button.pink{background:var(--pink)} button.blue{background:var(--blue)} button.green{background:var(--green)}
+  button.small{font-size:19px; padding:0 10px; min-height:32px; line-height:26px; box-shadow:1px 2px 0 var(--ink)}
+  button.big{font-size:32px; padding:8px 28px; min-height:58px}
+
+  input,select{
+    font:inherit; font-size:26px; color:var(--ink); background:transparent;
+    border:none; border-bottom:2px dashed var(--ink2); outline:none; padding:0 4px; height:40px;
+    border-radius:0; min-width:0;
+  }
+  input:focus{border-bottom:2px solid var(--red); background:rgba(255,240,138,.35)}
+  input:disabled{color:var(--ink); opacity:1; border-bottom-style:dotted}
+  select{border:2px solid var(--ink2); border-radius:8px 3px 9px 4px; height:38px; padding:0 6px; cursor:pointer}
+  label{font-weight:700}
+  .row{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:24px}
+
+  .note{
+    background:var(--yellow); padding:10px 16px; box-shadow:2px 4px 10px rgba(0,0,0,.18);
+    transform:rotate(-1.5deg); position:relative; line-height:28px;
+  }
+  .note::before{ /* skotç */
+    content:""; position:absolute; top:-12px; left:50%; width:90px; height:24px; margin-left:-45px;
+    background:rgba(255,255,255,.55); border:1px solid rgba(0,0,0,.06); transform:rotate(2deg);
+  }
+  .note.pink{background:var(--pink); transform:rotate(1.2deg)}
+  .note.blue{background:var(--blue); transform:rotate(-.8deg)}
+  .note.green{background:var(--green); transform:rotate(1deg)}
+
+  .rules{margin-top:40px}
+  .rules ul{margin:0; padding-left:22px}
+  .pts{display:inline-block; min-width:38px; text-align:center; font-weight:700; color:var(--red);
+       border:2px solid var(--red); border-radius:50% 45% 50% 40%; line-height:26px; padding:0 4px; font-size:20px}
+
+  /* Oyun ekranı */
+  .topbar{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin:6px 0 26px}
+  .roomcode{font-size:34px; letter-spacing:4px; font-weight:700}
+  .layout{display:grid; grid-template-columns:220px minmax(0,1fr); gap:28px; align-items:start}
+  .layout>*{min-width:0}
+  .players h3{margin:0; font-size:26px}
+  .players ol{margin:6px 0 0; padding-left:26px}
+  .players li{line-height:30px}
+  .players .me{text-decoration:underline wavy var(--red) 1.5px; text-underline-offset:4px}
+  .players .off{opacity:.45}
+  .players .sc{float:right; font-weight:700}
+  .crown{font-size:18px}
+
+  /* Çarx */
+  .wheelWrap{position:relative; width:min(360px,82vw); aspect-ratio:1; margin:8px auto 26px}
+  .wheelSpin{width:100%; height:100%; transition:transform 4.3s cubic-bezier(.12,.68,.1,1)}
+  .wheelSpin svg{width:100%; height:100%; display:block; filter:drop-shadow(2px 3px 0 rgba(31,45,99,.35))}
+  .pointer{position:absolute; left:50%; top:-14px; width:0; height:0; margin-left:-16px; z-index:2;
+           border-left:16px solid transparent; border-right:16px solid transparent; border-top:34px solid var(--red);
+           filter:drop-shadow(1px 2px 0 var(--ink))}
+  .hub{position:absolute; left:50%; top:50%; width:64px; height:64px; margin:-32px 0 0 -32px; border-radius:50%;
+       background:var(--paper); border:3px solid var(--ink); display:flex; align-items:center; justify-content:center;
+       font-weight:700; font-size:38px; color:var(--red); z-index:2}
+  .seg-text{font-family:'Caveat',cursive; font-weight:700; font-size:21px; fill:#1f2d63; text-anchor:middle}
+  .seg-used{opacity:.3}
+
+  /* Oyun vərəqi */
+  .letterLine{display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin-bottom:20px}
+  .bigLetter{width:86px; height:86px; display:flex; align-items:center; justify-content:center;
+             font-size:64px; font-weight:700; color:var(--red); border:3px solid var(--red);
+             border-radius:48% 52% 45% 55%/55% 45% 55% 45%; transform:rotate(-4deg); background:rgba(255,255,255,.6)}
+  .timer{font-size:44px; font-weight:700; min-width:90px}
+  .timer.warn{color:var(--red); animation:pulse .6s infinite alternate}
+  @keyframes pulse{to{transform:scale(1.12)}}
+  .fields{display:grid; gap:0 24px; grid-template-columns:1fr 1fr; margin-bottom:28px}
+  .field{display:flex; align-items:center; gap:10px; height:64px}
+  .field label{min-width:82px; font-size:26px}
+  .field input{flex:1; width:100%}
+  .banner{font-size:28px; font-weight:700; color:var(--red); margin-bottom:20px; transform:rotate(-1deg)}
+
+  /* Nəticə cədvəli */
+  .tableWrap{overflow-x:auto; margin-bottom:28px; -webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse; min-width:100%; font-size:22px}
+  th,td{border:2px solid var(--ink2); padding:2px 8px; text-align:left; vertical-align:top; line-height:26px}
+  th{background:rgba(198,230,255,.5); font-size:24px}
+  td.cell{min-width:96px}
+  td.cell .w{display:block; word-break:break-word}
+  td.cell .p{font-size:18px; font-weight:700; color:var(--red)}
+  td.click{cursor:pointer}
+  td.click:hover{background:rgba(255,240,138,.5)}
+  td.rej .w,td.bad .w{text-decoration:line-through 2.5px var(--red); color:#8a8fae}
+  td.same{background:rgba(255,201,220,.35)} td.solo{background:rgba(205,242,194,.5)} td.uniq{background:rgba(198,230,255,.35)}
+  td.total{font-weight:700; font-size:26px; color:var(--red); text-align:center}
+  .legend{font-size:20px; color:var(--ink2); margin-bottom:24px; line-height:28px}
+
+  .rank{font-size:30px; line-height:44px}
+  .rank li{margin-bottom:4px}
+  .muted{color:var(--ink2)}
+
+  #toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%) rotate(-1deg); z-index:50;
+         background:var(--yellow); border:2px solid var(--ink); padding:6px 18px; box-shadow:3px 4px 0 var(--ink);
+         font-weight:700; max-width:90vw; text-align:center; transition:opacity .3s; pointer-events:none}
+  #toast.hide{opacity:0}
+
+  @media (max-width:720px){
+    body{padding:8px 4px 30px; font-size:22px}
+    .sheet{padding:10px 12px 40px 46px;
+      background-image:linear-gradient(90deg,transparent 34px,var(--margin) 34px,var(--margin) 36px,transparent 36px),
+      repeating-linear-gradient(180deg,transparent 0 31px,var(--line) 31px 32px)}
+    .sheet::before{left:6px}
+    h1{font-size:34px; line-height:40px; margin:8px 0 16px}
+    .layout{grid-template-columns:1fr; gap:18px}
+    .fields{grid-template-columns:1fr}
+    .field{height:58px}
+    .bigLetter{width:72px; height:72px; font-size:54px}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <h1>Ad <span class="dot">·</span> Soyad <span class="dot">·</span> Şəhər <span class="dot">·</span> Əşya <span class="dot">·</span> Heyvan</h1>
+
+  <!-- GİRİŞ -->
+  <section id="home">
+    <p class="sub">Dostlarınla onlayn oyna: çarxı fırlat, hərf gəlsin, hamı yazsın!</p>
+    <div class="row">
+      <label for="myName">Adın:</label>
+      <input id="myName" maxlength="16" placeholder="məs. Rəşad" autocomplete="nickname">
+    </div>
+    <div class="row">
+      <button id="btnCreate" class="big">✏️ Otaq yarat</button>
+    </div>
+    <p class="muted">— və ya dostunun otağına qoşul —</p>
+    <div class="row">
+      <input id="joinCode" maxlength="5" placeholder="OTAQ KODU" style="width:170px; text-transform:uppercase; letter-spacing:3px">
+      <button id="btnJoin" class="blue">Qoşul</button>
+    </div>
+    <div id="homeMsg" class="banner" hidden></div>
+
+    <div class="rules note pink">
+      <h2>Qaydalar</h2>
+      <ul>
+        <li>Ev sahibi çarxı fırladır, bir hərf gəlir (məs. <b>R</b>).</li>
+        <li>Hamı həmin hərflə başlayan <b>ad, soyad, şəhər, əşya, heyvan</b> yazır.</li>
+        <li>Hamısını dolduran <b>“Bitirdim!”</b> deyə bilər — qalanlara 5 saniyə qalır.</li>
+        <li><span class="pts">5</span> eyni sözü başqası da yazıbsa</li>
+        <li><span class="pts">10</span> hər kəs fərqli söz yazıbsa</li>
+        <li><span class="pts">15</span> o sütunda yalnız sən yazmısansa</li>
+        <li>Yanlış söz — <span class="pts">0</span>. Ev sahibi sözün üstünə toxunub onu xətləyə bilər.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- OYUN -->
+  <section id="game" hidden>
+    <div class="topbar">
+      <div class="note">
+        Otaq kodu: <span class="roomcode" id="roomCode">-----</span><br>
+        <button class="small" id="btnShare">🔗 dəvət linki</button>
+      </div>
+      <div id="roundInfo" class="note blue"></div>
+    </div>
+
+    <div class="layout">
+      <aside class="players note green" id="players"></aside>
+
+      <main>
+        <!-- Lobbi / çarx -->
+        <div id="wheelBox">
+          <div id="lobbyMsg"></div>
+          <div class="wheelWrap">
+            <div class="pointer"></div>
+            <div class="wheelSpin" id="wheelSpin"></div>
+            <div class="hub" id="hub">?</div>
+          </div>
+          <div id="wheelCtl" class="row" style="justify-content:center"></div>
+        </div>
+
+        <!-- Yazı vərəqi -->
+        <div id="playBox" hidden>
+          <div class="letterLine">
+            <div class="bigLetter" id="bigLetter">R</div>
+            <div>
+              <div class="timer" id="timer">90</div>
+              <div class="muted" style="font-size:20px; line-height:22px">saniyə</div>
+            </div>
+          </div>
+          <div id="stopBanner" class="banner" hidden></div>
+          <div class="fields" id="fields"></div>
+          <div class="row">
+            <button id="btnFinish" class="pink big" disabled>✋ Bitirdim!</button>
+          </div>
+        </div>
+
+        <!-- Nəticələr -->
+        <div id="reviewBox" hidden></div>
+
+        <!-- Final -->
+        <div id="finalBox" hidden></div>
+      </main>
+    </div>
+  </section>
+</div>
+<div id="toast" class="hide"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- Sabitlər ---------- */
+const CATS = [['ad','Ad'],['soyad','Soyad'],['seher','Şəhər'],['esya','Əşya'],['heyvan','Heyvan']];
+// Azərbaycan əlifbası (Ğ ilə başlayan söz olmadığı üçün çarxda yoxdur)
+const LETTERS = 'A B C Ç D E Ə F G H X I İ J K Q L M N O Ö P R S Ş T U Ü V Y Z'.split(' ');
+const PREFIX = 'assoh-az-oyun-';
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const COLORS = ['#fff08a','#c6e6ff','#ffc9dc','#cdf2c2'];
+const SPIN_MS = 4500, STOP_MS = 5000, COLLECT_MS = 1600;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const lower = s => s.toLocaleLowerCase('az');
+const norm = s => lower(String(s || '').trim().replace(/\s+/g, ' '));
+const key = s => norm(s).replace(/ı/g, 'i');      // I/İ fərqini müqayisədə bağışlayırıq
+function startsWith(word, letter){
+  const f = norm(word)[0], l = lower(letter);
+  if (!f) return false;
+  if ((l === 'i' || l === 'ı') && (f === 'i' || f === 'ı')) return true;
+  return f === l;
+}
+
+/* ---------- Yaddaş ---------- */
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+};
+let myId = store.get('assoh_id');
+if (!myId){ myId = Math.random().toString(36).slice(2) + Date.now().toString(36); store.set('assoh_id', myId); }
+
+/* ---------- Vəziyyət ---------- */
+let peer = null, isHost = false, roomCode = '';
+let hostConn = null;               // müştəri üçün
+const conns = new Map();           // ev sahibi üçün: peerId -> {conn, pid}
+let H = null;                      // ev sahibinin əsas vəziyyəti
+let S = null;                      // ekranda göstərilən vəziyyət
+let hostEnd = 0, hostTimer = null;
+let localEnd = 0, timerKey = null, spinKey = null, formRound = -1;
+let wheelRot = 0, wheelUsedKey = '';
+let sendTimer = null;
+
+/* ---------- UI köməkçiləri ---------- */
+let toastT;
+function toast(msg, ms = 2600){
+  const t = $('#toast'); t.textContent = msg; t.classList.remove('hide');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.add('hide'), ms);
+}
+function homeMsg(msg){ const m = $('#homeMsg'); m.textContent = msg || ''; m.hidden = !msg; }
+
+$('#myName').value = store.get('assoh_name') || '';
+const qp = new URLSearchParams(location.search).get('otaq');
+if (qp) $('#joinCode').value = qp.toUpperCase();
+
+function getName(){
+  const n = $('#myName').value.trim().slice(0, 16);
+  if (!n){ homeMsg('Əvvəlcə adını yaz ✍️'); $('#myName').focus(); return null; }
+  store.set('assoh_name', n); return n;
+}
+
+/* ---------- Yazı sahələri ---------- */
+(function buildFields(){
+  $('#fields').innerHTML = CATS.map(([k, label]) =>
+    `<div class="field"><label for="f_${k}">${label}:</label>
+     <input id="f_${k}" data-k="${k}" maxlength="40" autocomplete="off" autocapitalize="words" spellcheck="false"></div>`).join('');
+  $('#fields').addEventListener('input', () => { updateFinishBtn(); scheduleSend(); });
+  $('#fields').addEventListener('keydown', e => {
+    if (e.key === 'Enter'){
+      const ins = [...document.querySelectorAll('#fields input')];
+      const i = ins.indexOf(e.target);
+      if (i > -1 && i < ins.length - 1) ins[i+1].focus(); else e.target.blur();
+    }
+  });
+})();
+function readAnswers(){
+  const a = {};
+  document.querySelectorAll('#fields input').forEach(i => a[i.dataset.k] = i.value.trim().slice(0, 40));
+  return a;
+}
+function clearFields(){ document.querySelectorAll('#fields input').forEach(i => i.value = ''); }
+function updateFinishBtn(){
+  const a = readAnswers();
+  const all = CATS.every(([k]) => a[k]);
+  $('#btnFinish').disabled = !(S && S.phase === 'playing' && all);
+}
+function scheduleSend(){ clearTimeout(sendTimer); sendTimer = setTimeout(sendAnswers, 350); }
+function sendAnswers(){
+  clearTimeout(sendTimer);
+  if (!S) return;
+  toHost({ t:'answers', round:S.round, a:readAnswers() });
+}
+$('#btnFinish').onclick = () => { sendAnswers(); toHost({ t:'finish' }); };
+
+/* ---------- Çarx ---------- */
+function buildWheel(used){
+  const n = LETTERS.length, a = 360 / n, r = 148;
+  const rad = d => d * Math.PI / 180;
+  const x1 = (r * Math.sin(rad(-a/2))).toFixed(2), y1 = (-r * Math.cos(rad(-a/2))).toFixed(2);
+  const x2 = (r * Math.sin(rad(a/2))).toFixed(2),  y2 = (-r * Math.cos(rad(a/2))).toFixed(2);
+  let g = '';
+  LETTERS.forEach((L, i) => {
+    const c = (i + .5) * a, u = used.includes(L);
+    g += `<g transform="rotate(${c.toFixed(3)})" class="${u ? 'seg-used' : ''}">
+      <path d="M0 0 L${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2} Z" fill="${u ? '#e3e0d6' : COLORS[i % 4]}" stroke="#1f2d63" stroke-width="1.4"/>
+      <text class="seg-text" x="0" y="-122">${L}</text></g>`;
+  });
+  $('#wheelSpin').innerHTML =
+    `<svg viewBox="-152 -152 304 304"><circle r="150" fill="#fffdf5" stroke="#1f2d63" stroke-width="3"/>${g}
+     <circle r="150" fill="none" stroke="#1f2d63" stroke-width="3"/></svg>`;
+}
+function setWheel(rot, animate){
+  const el = $('#wheelSpin');
+  if (!animate){ el.style.transition = 'none'; el.style.transform = `rotate(${rot}deg)`; void el.offsetWidth; el.style.transition = ''; }
+  else el.style.transform = `rotate(${rot}deg)`;
+  wheelRot = rot;
+}
+buildWheel([]);
+
+/* ---------- Şəbəkə ---------- */
+function newCode(){ let c = ''; for (let i = 0; i < 5; i++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]; return c; }
+function lockHome(on){ $('#btnCreate').disabled = on; $('#btnJoin').disabled = on; }
+
+function createRoom(){
+  const name = getName(); if (!name) return;
+  if (typeof Peer === 'undefined'){ homeMsg('Şəbəkə kitabxanası yüklənmədi. İnterneti yoxla və səhifəni yenilə.'); return; }
+  lockHome(true); homeMsg('Otaq hazırlanır...');
+  const code = newCode();
+  peer = new Peer(PREFIX + code);
+  peer.on('open', () => {
+    isHost = true; roomCode = code;
+    H = { phase:'lobby', players:[], round:0, totalRounds:5, timeLimit:90, letter:null, used:[], spin:null,
+          timer:null, answers:{}, override:{}, results:null, stopBy:null, roundPlayers:[] };
+    H.players.push({ id:myId, name, score:0, online:true, host:true });
+    enterGame(); commit();
+    window.addEventListener('beforeunload', e => { if (H.players.length > 1){ e.preventDefault(); e.returnValue = ''; } });
+  });
+  peer.on('connection', conn => {
+    conn.on('data', d => onHostData(conn, d));
+    conn.on('close', () => onHostClose(conn));
+    conn.on('error', () => onHostClose(conn));
+  });
+  peer.on('disconnected', () => { try { peer.reconnect(); } catch(e){} });
+  peer.on('error', err => {
+    if (err.type === 'unavailable-id'){ peer.destroy(); lockHome(false); createRoom(); return; }
+    if (!isHost){ lockHome(false); homeMsg('Otaq yaradıla bilmədi: ' + (err.type || err)); }
+    else toast('Şəbəkə xətası: ' + (err.type || err));
+  });
+}
+
+function joinRoom(){
+  const name = getName(); if (!name) return;
+  const code = $('#joinCode').value.trim().toUpperCase();
+  if (code.length !== 5){ homeMsg('5 hərfli otaq kodunu yaz'); return; }
+  if (typeof Peer === 'undefined'){ homeMsg('Şəbəkə kitabxanası yüklənmədi. İnterneti yoxla və səhifəni yenilə.'); return; }
+  lockHome(true); homeMsg('Qoşulur...');
+  peer = new Peer();
+  let opened = false;
+  peer.on('open', () => {
+    hostConn = peer.connect(PREFIX + code, { reliable:true });
+    hostConn.on('open', () => {
+      opened = true; roomCode = code;
+      history.replaceState(null, '', location.pathname + '?otaq=' + code);
+      hostConn.send({ t:'hello', id:myId, name });
+      enterGame();
+    });
+    hostConn.on('data', d => { if (d && d.t === 'state') apply(d.s); });
+    hostConn.on('close', () => lostHost());
+    setTimeout(() => { if (!opened){ lockHome(false); homeMsg('Otağa qoşulmaq alınmadı. Kodu yoxla.'); } }, 12000);
+  });
+  peer.on('disconnected', () => { try { peer.reconnect(); } catch(e){} });
+  peer.on('error', err => {
+    lockHome(false);
+    if (err.type === 'peer-unavailable') homeMsg('Belə otaq tapılmadı 🙁 Kodu yoxla.');
+    else if (opened) toast('Şəbəkə xətası: ' + (err.type || err));
+    else homeMsg('Qoşulma xətası: ' + (err.type || err));
+  });
+}
+let lost = false;
+function lostHost(){
+  if (lost) return; lost = true;
+  $('#roundInfo').innerHTML = '<b style="color:var(--red)">Ev sahibi ilə əlaqə kəsildi.</b><br><button class="small" onclick="location.reload()">Yenidən qoşul</button>';
+  toast('Əlaqə kəsildi', 4000);
+}
+
+function toHost(msg){
+  if (isHost) hostHandle(myId, msg);
+  else if (hostConn && hostConn.open) hostConn.send(msg);
+}
+
+/* ---------- Ev sahibi məntiqi ---------- */
+function onHostData(conn, d){
+  if (!d || typeof d !== 'object') return;
+  if (d.t === 'hello'){
+    const id = String(d.id || '').slice(0, 40) || conn.peer;
+    conns.set(conn.peer, { conn, pid:id });
+    hostHandle(id, d);
+    return;
+  }
+  const c = conns.get(conn.peer); if (!c) return;
+  hostHandle(c.pid, d);
+}
+function onHostClose(conn){
+  const c = conns.get(conn.peer); if (!c) return;
+  conns.delete(conn.peer);
+  const p = H.players.find(p => p.id === c.pid);
+  if (p && ![...conns.values()].some(x => x.pid === p.id)){ p.online = false; toast(p.name + ' çıxdı'); commit(); }
+}
+function hostHandle(pid, m){
+  if (!H) return;
+  if (m.t === 'hello'){
+    const name = String(m.name || 'Oyunçu').trim().slice(0, 16) || 'Oyunçu';
+    let p = H.players.find(p => p.id === pid);
+    if (p){ p.online = true; p.name = name; }
+    else { p = { id:pid, name, score:0, online:true }; H.players.push(p); }
+    if (['spinning','playing','stopping'].includes(H.phase) && !H.roundPlayers.includes(pid)) H.roundPlayers.push(pid);
+    toast(name + ' qoşuldu 👋');
+    commit();
+  }
+  else if (m.t === 'answers'){
+    if (m.round !== H.round || !['playing','stopping','collecting'].includes(H.phase)) return;
+    const a = {}; CATS.forEach(([k]) => a[k] = String((m.a || {})[k] || '').trim().slice(0, 40));
+    H.answers[pid] = a;
+  }
+  else if (m.t === 'finish'){
+    if (H.phase !== 'playing') return;
+    const p = H.players.find(p => p.id === pid);
+    H.phase = 'stopping'; H.stopBy = p ? p.name : '?';
+    startTimer(STOP_MS, endRound);
+    commit();
+  }
+}
+function startTimer(ms, cb){
+  clearTimeout(hostTimer);
+  hostEnd = Date.now() + ms;
+  H.timer = { id:Math.random().toString(36).slice(2), ms };
+  hostTimer = setTimeout(cb, ms);
+}
+function hostSpin(){
+  if (!['lobby','ready'].includes(H.phase)) return;
+  let pool = LETTERS.filter(L => !H.used.includes(L));
+  if (!pool.length){ H.used = []; pool = LETTERS.slice(); }
+  const L = pool[Math.floor(Math.random() * pool.length)];
+  const a = 360 / LETTERS.length, c = (LETTERS.indexOf(L) + .5) * a;
+  const prev = H.spin ? H.spin.rot : 0;
+  const target = (((-c - prev) % 360) + 360) % 360;
+  const jitter = (Math.random() - .5) * a * .6;
+  H.spin = { id:Date.now() + Math.random(), rot: prev + 360 * 6 + target + jitter };
+  H.round += 1; H.letter = L; H.used.push(L);
+  H.answers = {}; H.override = {}; H.results = null; H.stopBy = null;
+  H.roundPlayers = H.players.filter(p => p.online).map(p => p.id);
+  H.phase = 'spinning'; H.timer = null; clearTimeout(hostTimer);
+  commit();
+  hostTimer = setTimeout(() => {
+    H.phase = 'playing';
+    startTimer(H.timeLimit * 1000, () => { if (H.phase === 'playing') endRound(); });
+    commit();
+  }, SPIN_MS);
+}
+function endRound(){
+  if (!['playing','stopping'].includes(H.phase)) return;
+  H.phase = 'collecting'; H.timer = null; clearTimeout(hostTimer);
+  commit();
+  hostTimer = setTimeout(() => { computeResults(); H.phase = 'review'; commit(); }, COLLECT_MS);
+}
+function computeResults(){
+  const cells = {}, totals = {};
+  const ids = H.roundPlayers.filter(id => H.players.some(p => p.id === id));
+  ids.forEach(id => { cells[id] = {}; totals[id] = 0; });
+  for (const [k] of CATS){
+    const valid = [];
+    for (const id of ids){
+      const w = ((H.answers[id] || {})[k] || '').trim();
+      const ov = !!H.override[id + '|' + k];
+      let st;
+      if (!w) st = 'empty';
+      else if (!startsWith(w, H.letter)) st = ov ? 'ok' : 'bad';
+      else st = ov ? 'rej' : 'ok';
+      cells[id][k] = { w, st, p:0 };
+      if (st === 'ok') valid.push(id);
+    }
+    const groups = {};
+    valid.forEach(id => { const g = key(cells[id][k].w); groups[g] = (groups[g] || 0) + 1; });
+    valid.forEach(id => {
+      const cell = cells[id][k];
+      if (valid.length === 1){ cell.st = 'solo'; cell.p = 15; }
+      else if (groups[key(cell.w)] > 1){ cell.st = 'same'; cell.p = 5; }
+      else { cell.st = 'uniq'; cell.p = 10; }
+      totals[id] += cell.p;
+    });
+  }
+  H.results = { ids, cells, totals };
+}
+function hostToggle(id, k){
+  if (H.phase !== 'review') return;
+  const cell = H.results && H.results.cells[id] && H.results.cells[id][k];
+  if (!cell || cell.st === 'empty') return;
+  const kk = id + '|' + k;
+  if (H.override[kk]) delete H.override[kk]; else H.override[kk] = true;
+  computeResults(); commit();
+}
+function hostConfirm(){
+  if (H.phase !== 'review') return;
+  for (const id of H.results.ids){
+    const p = H.players.find(p => p.id === id); if (p) p.score += H.results.totals[id] || 0;
+  }
+  H.phase = H.round >= H.totalRounds ? 'final' : 'ready';
+  commit();
+}
+function hostNewGame(){
+  H.players.forEach(p => p.score = 0);
+  H.round = 0; H.used = []; H.letter = null; H.results = null; H.answers = {}; H.phase = 'lobby';
+  commit();
+}
+function commit(){
+  if (H.timer) H.timer.ms = Math.max(0, hostEnd - Date.now());
+  const snap = JSON.parse(JSON.stringify(H));
+  delete snap.answers;                       // cavablar yalnız nəticədə görünür
+  for (const { conn } of conns.values()){ try { if (conn.open) conn.send({ t:'state', s:snap }); } catch(e){} }
+  apply(snap);
+}
+
+/* ---------- Vəziyyəti tətbiq et ---------- */
+function apply(s){
+  const prev = S; S = s;
+  if (S.timer){ if (S.timer.id !== timerKey){ timerKey = S.timer.id; localEnd = Date.now() + S.timer.ms; } }
+  else timerKey = null;
+
+  if (S.round !== formRound && ['spinning','playing','stopping'].includes(S.phase)){
+    formRound = S.round; clearFields();
+  }
+  if (prev && prev.phase !== S.phase && ['stopping','collecting'].includes(S.phase)) sendAnswers();
+  if (prev && prev.phase !== 'playing' && S.phase === 'playing'){
+    setTimeout(() => { const f = $('#f_ad'); if (f && window.innerWidth > 720) f.focus(); }, 50);
+  }
+
+  const usedKey = (S.used || []).join(',');
+  if (usedKey !== wheelUsedKey && S.phase !== 'spinning'){ wheelUsedKey = usedKey; buildWheel(S.used || []); }
+  if (S.spin && S.spin.id !== spinKey){
+    const first = spinKey === null;
+    spinKey = S.spin.id;
+    setWheel(S.spin.rot, !first || S.phase === 'spinning');
+    if (S.phase === 'spinning'){ $('#hub').textContent = '?'; }
+  }
+  render();
+}
+
+/* ---------- Ekran ---------- */
+function enterGame(){
+  $('#home').hidden = true; $('#game').hidden = false;
+  $('#roomCode').textContent = roomCode;
+  window.scrollTo(0, 0);
+}
+const PH_TEXT = { lobby:'Gözləmə otağı', ready:'Növbəti tur', spinning:'Çarx fırlanır...', playing:'Yaz!', stopping:'Tələs!', collecting:'Vərəqlər toplanır...', review:'Yoxlama', final:'Oyun bitdi' };
+
+function render(){
+  if (!S) return;
+  const me = S.players.find(p => p.id === myId);
+  // Tur məlumatı
+  if (!lost) $('#roundInfo').innerHTML =
+    `<b>${PH_TEXT[S.phase] || ''}</b><br>Tur: ${S.round || 0} / ${S.totalRounds} &nbsp;·&nbsp; ⏱ ${S.timeLimit} san`;
+
+  // Oyunçular
+  const sorted = S.players.slice().sort((a,b) => b.score - a.score);
+  $('#players').innerHTML = `<h3>Oyunçular (${S.players.filter(p=>p.online).length})</h3><ol>` +
+    sorted.map(p => `<li class="${p.id === myId ? 'me' : ''} ${p.online ? '' : 'off'}">
+      ${p.host ? '<span class="crown">👑</span>' : ''}${esc(p.name)}<span class="sc">${p.score}</span></li>`).join('') + '</ol>';
+
+  const ph = S.phase;
+  const showWheel = ['lobby','ready','spinning'].includes(ph);
+  $('#wheelBox').hidden = !showWheel;
+  $('#playBox').hidden = !['playing','stopping','collecting'].includes(ph);
+  $('#reviewBox').hidden = ph !== 'review';
+  $('#finalBox').hidden = ph !== 'final';
+
+  // Çarx və lobbi
+  if (showWheel){
+    let msg = '', ctl = '';
+    if (ph === 'lobby'){
+      msg = `<p class="sub">Dostlarına otaq kodunu <b>${esc(roomCode)}</b> göndər və ya dəvət linkini paylaş.</p>`;
+      if (isHost){
+        ctl = `<label>Tur sayı: <select id="setRounds">${[3,5,7,10,15].map(n=>`<option ${n===S.totalRounds?'selected':''}>${n}</option>`).join('')}</select></label>
+               <label>Vaxt: <select id="setTime">${[45,60,90,120,180].map(n=>`<option value="${n}" ${n===S.timeLimit?'selected':''}>${n} san</option>`).join('')}</select></label>
+               <div style="flex-basis:100%"></div>
+               <button class="big" id="btnSpin">🎡 Çarxı fırlat</button>`;
+      } else ctl = `<p class="muted">Ev sahibinin çarxı fırlatmasını gözlə...</p>`;
+    } else if (ph === 'ready'){
+      msg = `<p class="sub">${S.round}-ci tur bitdi. Növbəti hərf üçün çarx hazırdır!</p>`;
+      ctl = isHost ? `<button class="big" id="btnSpin">🎡 Çarxı fırlat</button>` : `<p class="muted">Ev sahibi çarxı fırladacaq...</p>`;
+    } else if (ph === 'spinning'){
+      msg = `<p class="sub">Hansı hərf gələcək? 🤞</p>`;
+      setTimeout(() => { if (S && S.phase === 'spinning') $('#hub').textContent = S.letter; }, SPIN_MS - 400);
+    }
+    if (ph !== 'spinning') $('#hub').textContent = S.letter || '?';
+    $('#lobbyMsg').innerHTML = msg;
+    $('#wheelCtl').innerHTML = ctl;
+    const b = $('#btnSpin'); if (b) b.onclick = hostSpin;
+    const r = $('#setRounds'); if (r) r.onchange = () => { H.totalRounds = +r.value; commit(); };
+    const t = $('#setTime'); if (t) t.onchange = () => { H.timeLimit = +t.value; commit(); };
+  }
+
+  // Yazı vərəqi
+  if (!$('#playBox').hidden){
+    $('#bigLetter').textContent = S.letter;
+    const editable = ph === 'playing' || ph === 'stopping';
+    document.querySelectorAll('#fields input').forEach(i => {
+      i.disabled = !editable;
+      i.placeholder = editable ? S.letter + '...' : '';
+    });
+    const sb = $('#stopBanner');
+    if (ph === 'stopping'){ sb.hidden = false; sb.textContent = `✋ ${S.stopBy} bitirdi! Tez yaz!`; }
+    else if (ph === 'collecting'){ sb.hidden = false; sb.textContent = '✏️ Qələmlər yerə! Vərəqlər toplanır...'; }
+    else sb.hidden = true;
+    $('#btnFinish').hidden = ph !== 'playing';
+    updateFinishBtn();
+  }
+
+  if (ph === 'review') renderReview();
+  if (ph === 'final') renderFinal();
+  tick();
+}
+
+function renderReview(){
+  const R = S.results; if (!R) return;
+  const name = id => { const p = S.players.find(p => p.id === id); return p ? p.name : '?'; };
+  const label = { solo:'tək', uniq:'fərqli', same:'eyni', bad:'hərf səhv', rej:'xətləndi', empty:'' };
+  let h = `<h2>Hərf: <span style="color:var(--red)">${esc(S.letter)}</span> — nəticələr</h2>
+    <div class="tableWrap"><table><thead><tr><th>Oyunçu</th>${CATS.map(([,l])=>`<th>${l}</th>`).join('')}<th>Cəm</th></tr></thead><tbody>`;
+  for (const id of R.ids){
+    h += `<tr><td><b>${esc(name(id))}</b></td>`;
+    for (const [k] of CATS){
+      const c = R.cells[id][k];
+      const cls = ['cell', c.st, isHost && c.st !== 'empty' ? 'click' : ''].join(' ');
+      h += `<td class="${cls}" data-id="${esc(id)}" data-k="${k}">
+        <span class="w">${c.w ? esc(c.w) : '<span class="muted">—</span>'}</span>
+        ${c.st !== 'empty' ? `<span class="p">${c.p} · ${label[c.st]}</span>` : ''}</td>`;
+    }
+    h += `<td class="total">${R.totals[id] || 0}</td></tr>`;
+  }
+  h += `</tbody></table></div>
+    <div class="legend">🟩 tək yazan — 15 &nbsp; 🟦 fərqli — 10 &nbsp; 🩷 eyni — 5 &nbsp; ❌ səhv — 0<br>
+    ${isHost ? 'Yanlış sözün üstünə toxun — xətlənəcək (0 xal). Yenidən toxunsan, geri qaytarılır.' : 'Ev sahibi yanlış sözləri xətləyə bilər.'}</div>`;
+  h += isHost
+    ? `<div class="row"><button class="green big" id="btnConfirm">✔ Xalları yaz${S.round >= S.totalRounds ? ' və bitir' : ' və davam et'}</button></div>`
+    : `<p class="muted">Ev sahibi xalları təsdiqləyir...</p>`;
+  $('#reviewBox').innerHTML = h;
+  if (isHost){
+    $('#reviewBox').querySelectorAll('td.click').forEach(td => td.onclick = () => hostToggle(td.dataset.id, td.dataset.k));
+    $('#btnConfirm').onclick = hostConfirm;
+  }
+}
+
+function renderFinal(){
+  const sorted = S.players.slice().sort((a,b) => b.score - a.score);
+  const medal = ['🥇','🥈','🥉'];
+  let h = `<h2>🏆 Oyun bitdi!</h2>
+    <div class="note" style="margin:16px 0 32px; transform:rotate(-1deg)">
+      <ol class="rank" style="list-style:none; padding:0; margin:0">` +
+      sorted.map((p,i) => `<li>${medal[i] || (i+1)+'.'} <b>${esc(p.name)}</b> — ${p.score} xal</li>`).join('') +
+    `</ol></div>`;
+  if (sorted[0]) h += `<p class="banner">Təbriklər, ${esc(sorted[0].name)}! 🎉</p>`;
+  h += isHost
+    ? `<div class="row"><label>Tur sayı: <select id="setRounds2">${[3,5,7,10,15].map(n=>`<option ${n===S.totalRounds?'selected':''}>${n}</option>`).join('')}</select></label>
+       <button class="big" id="btnNew">🔄 Yeni oyun</button></div>`
+    : `<p class="muted">Ev sahibi yeni oyun başlada bilər.</p>`;
+  $('#finalBox').innerHTML = h;
+  if (isHost){
+    $('#btnNew').onclick = hostNewGame;
+    $('#setRounds2').onchange = e => { H.totalRounds = +e.target.value; commit(); };
+  }
+}
+
+function tick(){
+  if (!S) return;
+  const t = $('#timer');
+  if (S.timer && ['playing','stopping'].includes(S.phase)){
+    const left = Math.max(0, Math.ceil((localEnd - Date.now()) / 1000));
+    t.textContent = left;
+    t.classList.toggle('warn', left <= 10);
+  } else if (S.phase === 'collecting'){ t.textContent = '0'; t.classList.remove('warn'); }
+}
+setInterval(tick, 250);
+
+/* ---------- Düymələr ---------- */
+$('#btnCreate').onclick = createRoom;
+$('#btnJoin').onclick = joinRoom;
+$('#joinCode').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
+$('#btnShare').onclick = async () => {
+  const url = location.origin + location.pathname + '?otaq=' + roomCode;
+  const text = 'Ad-Soyad-Şəhər-Əşya-Heyvan oynayaq! Otaq kodu: ' + roomCode;
+  if (navigator.share){ try { await navigator.share({ title:'Ad Soyad Şəhər Əşya Heyvan', text, url }); return; } catch(e){ if (e.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(url); toast('Link kopyalandı ✔'); }
+  catch(e){ prompt('Bu linki dostlarına göndər:', url); }
+};
+})();
+</script>
+</body>
+</html>
