@@ -238,7 +238,7 @@
     <div id="finalBox" hidden></div>
   </section>
 </div>
-<p class="muted" style="text-align:center; font-size:12px; margin-top:14px">Versiya 5</p>
+<p class="muted" style="text-align:center; font-size:12px; margin-top:14px">Versiya 6</p>
 <div id="toast" class="hide"></div>
 
 <script>
@@ -252,7 +252,7 @@ const LETTERS = 'A B C Ç D E Ə F G H X I İ J K Q L M N O Ö P R S Ş T U Ü V
 const PREFIX = 'assoh-az-oyun-';
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const COLORS = ['#fff08a','#c6e6ff','#ffc9dc','#cdf2c2'];
-const SPIN_MS = 4500, STOP_MS = 5000, COLLECT_MS = 1600;
+const SPIN_MS = 4500, COLLECT_MS = 6000;
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -261,7 +261,7 @@ const norm = s => lower(String(s || '').trim().replace(/\s+/g, ' '));
 const key = s => norm(s).replace(/ı/g, 'i').replace(/[-\s'’`]/g, '');   // I/İ, defis və boşluq fərqini bağışlayırıq
 
 /* ---------- Lüğət yoxlaması ---------- */
-const VERSION = '5';
+const VERSION = '6';
 let LUGAT = null, lugatState = 'none';   // none | loading | ok | error
 function loadLugat(){
   if (lugatState === 'loading' || lugatState === 'ok') return;
@@ -366,12 +366,21 @@ function updateFinishBtn(){
   $('#btnFinish').disabled = !(S && S.phase === 'playing' && all);
 }
 function scheduleSend(){ clearTimeout(sendTimer); sendTimer = setTimeout(sendAnswers, 350); }
-function sendAnswers(){
+function sendAnswers(final){
   clearTimeout(sendTimer);
   if (!S) return;
-  toHost({ t:'answers', round:S.round, a:readAnswers() });
+  toHost({ t:'answers', round:S.round, a:readAnswers(), final:!!final });
 }
-$('#btnFinish').onclick = () => { sendAnswers(); toHost({ t:'finish' }); };
+function sendFinal(){
+  // telefonda klaviaturanın "yarımçıq" sözünü də yadda saxlamaq üçün əvvəl fokusu götürürük
+  const el = document.activeElement;
+  if (el && el.closest && el.closest('#fields')) el.blur();
+  sendAnswers(true);
+  setTimeout(() => sendAnswers(true), 700);   // ehtiyat üçün bir daha
+}
+$('#btnFinish').onclick = () => { toHost({ t:'finish', round:S.round, a:readAnswers() }); };
+$('#fields').addEventListener('change', scheduleSend);
+$('#fields').addEventListener('compositionend', scheduleSend);
 
 /* ---------- Çarx ---------- */
 function buildWheel(used){
@@ -500,16 +509,41 @@ function hostHandle(pid, m){
     commit();
   }
   else if (m.t === 'answers'){
-    if (m.round !== H.round || !['playing','stopping','collecting'].includes(H.phase)) return;
-    const a = {}; CATS.forEach(([k]) => a[k] = String((m.a || {})[k] || '').trim().slice(0, 40));
-    H.answers[pid] = a;
+    if (m.round !== H.round) return;
+    if (H.phase === 'review'){
+      // gecikmiş son cavab: yenidən hesabla ki, heç kimin yazdığı itməsin
+      if (!m.final || H.got[pid]) return;
+      storeAnswers(pid, m.a); H.got[pid] = true; computeResults(); commit(); return;
+    }
+    if (!['playing','stopping','collecting'].includes(H.phase)) return;
+    storeAnswers(pid, m.a);
+    if (m.final && H.phase === 'collecting'){ H.got[pid] = true; checkCollected(); }
   }
   else if (m.t === 'finish'){
     if (H.phase !== 'playing') return;
+    if (m.a && m.round === H.round){ storeAnswers(pid, m.a); }
+    H.got = {}; H.got[pid] = true;
     const p = H.players.find(p => p.id === pid);
     H.stopBy = p ? p.name : '?';
     endRound();
   }
+}
+function storeAnswers(pid, raw){
+  const a = {}; CATS.forEach(([k]) => a[k] = String((raw || {})[k] || '').trim().slice(0, 40));
+  // boş gələn cavab əvvəl gəlmiş doldurulmuş cavabı silməsin
+  const old = H.answers[pid] || {};
+  CATS.forEach(([k]) => { if (!a[k] && old[k] && H.phase !== 'playing') a[k] = old[k]; });
+  H.answers[pid] = a;
+}
+function checkCollected(){
+  if (H.phase !== 'collecting') return;
+  const need = H.roundPlayers.filter(id => H.players.some(p => p.id === id && p.online));
+  if (need.every(id => H.got[id])) finishCollect();
+}
+function finishCollect(){
+  if (H.phase !== 'collecting') return;
+  clearTimeout(hostTimer);
+  computeResults(); H.phase = 'review'; commit();
 }
 function startTimer(ms, cb){
   clearTimeout(hostTimer);
@@ -529,7 +563,7 @@ function hostSpin(){
   const jitter = (Math.random() - .5) * a * .6;
   H.spin = { id:Date.now() + Math.random(), rot: prev + 360 * 6 + target + jitter };
   H.round += 1; H.letter = L; H.used.push(L);
-  H.answers = {}; H.override = {}; H.results = null; H.stopBy = null; H.frozen = null;
+  H.answers = {}; H.got = {}; H.override = {}; H.results = null; H.stopBy = null; H.frozen = null;
   H.roundPlayers = H.players.filter(p => p.online).map(p => p.id);
   H.phase = 'spinning'; H.timer = null; clearTimeout(hostTimer);
   commit();
@@ -542,9 +576,11 @@ function hostSpin(){
 function endRound(){
   if (!['playing','stopping'].includes(H.phase)) return;
   H.frozen = Math.max(0, Math.ceil((hostEnd - Date.now()) / 1000));
+  if (!H.got) H.got = {};
   H.phase = 'collecting'; H.timer = null; clearTimeout(hostTimer);
-  commit();
-  hostTimer = setTimeout(() => { computeResults(); H.phase = 'review'; commit(); }, COLLECT_MS);
+  commit();                                   // bu, hamıya "son cavabını göndər" deməkdir
+  hostTimer = setTimeout(finishCollect, COLLECT_MS);
+  checkCollected();
 }
 function computeResults(){
   const cells = {}, totals = {};
@@ -573,7 +609,7 @@ function computeResults(){
       totals[id] += cell.p;
     });
   }
-  H.results = { ids, cells, totals };
+  H.results = { ids, cells, totals, noAns: ids.filter(id => !H.answers[id]) };
 }
 function hostToggle(id, k){
   if (H.phase !== 'review') return;
@@ -613,7 +649,7 @@ function apply(s){
   if (S.round !== formRound && ['spinning','playing','stopping'].includes(S.phase)){
     formRound = S.round; clearFields();
   }
-  if (prev && prev.phase !== S.phase && ['stopping','collecting'].includes(S.phase)) sendAnswers();
+  if (prev && prev.phase !== S.phase && S.phase === 'collecting') sendFinal();
   if (prev && prev.phase !== 'playing' && S.phase === 'playing'){
     setTimeout(() => { const f = $('#f_ad'); if (f && window.innerWidth > 720) f.focus(); }, 50);
   }
@@ -718,7 +754,7 @@ function renderReview(){
     ${S.stopBy ? `<p class="muted">✋ <b>${esc(S.stopBy)}</b> bitirdi, vaxt ${S.frozen} saniyədə dayandı.</p>` : `<p class="muted">⏰ Vaxt bitdi.</p>`}
     <div class="tableWrap"><table><thead><tr><th>Oyunçu</th>${CATS.map(([,l])=>`<th>${l}</th>`).join('')}<th>Cəm</th></tr></thead><tbody>`;
   for (const id of R.ids){
-    h += `<tr><td class="name">${esc(name(id))}</td>`;
+    h += `<tr><td class="name">${esc(name(id))}${(R.noAns || []).includes(id) ? '<span class="why">cavab gəlmədi</span>' : ''}</td>`;
     for (const [k] of CATS){
       const c = R.cells[id][k];
       const cls = ['cell', c.st, isHost && c.st !== 'empty' ? 'click' : ''].join(' ');
