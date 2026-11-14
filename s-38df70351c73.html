@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Süleyman → Bip</title>
+<style>
+  body { font-family: system-ui, sans-serif; background:#111; color:#eee; margin:0;
+         display:flex; flex-direction:column; align-items:center; justify-content:center;
+         min-height:100vh; padding:20px; box-sizing:border-box; text-align:center; }
+  h1 { font-size:1.5rem; margin:0 0 10px; }
+  button { font-size:1.1rem; padding:12px 24px; border:0; border-radius:12px;
+           background:#2e7d32; color:#fff; margin:8px; }
+  button.stop { background:#c62828; }
+  button.test { background:#455a64; }
+  select { font-size:1rem; padding:8px; border-radius:8px; }
+  #status { margin:12px 0; color:#ffcc80; max-width:600px; }
+  #count { font-size:3rem; font-weight:bold; }
+  #heard { margin-top:16px; max-width:600px; color:#ccc; min-height:3em; }
+  #log { margin-top:10px; max-width:600px; font-size:.85rem; color:#888; text-align:left; }
+  .flash { animation: f .4s; }
+  @keyframes f { from { background:#ffeb3b; } to { background:#111; } }
+</style>
+</head>
+<body>
+  <h1>"Süleyman" deyin — bip səsi gələcək</h1>
+  <label>Dil:
+    <select id="lang">
+      <option value="az-AZ">Azərbaycan dili</option>
+      <option value="tr-TR">Türkcə</option>
+      <option value="ru-RU">Rusca</option>
+      <option value="en-US">İngiliscə</option>
+    </select>
+  </label>
+  <div>
+    <button id="btn">▶ Başla</button>
+    <button id="test" class="test">🔊 Bip yoxla</button>
+  </div>
+  <div id="status">Dayandırılıb</div>
+  <div>Bip sayı: <span id="count">0</span></div>
+  <div id="heard"></div>
+  <div id="log"></div>
+
+<script>
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const btn = document.getElementById('btn');
+const statusEl = document.getElementById('status');
+const heardEl = document.getElementById('heard');
+const countEl = document.getElementById('count');
+const logEl = document.getElementById('log');
+let rec, listening = false, count = 0, audioCtx, lastBeep = 0;
+
+function log(msg) {
+  logEl.innerHTML = msg + '<br>' + logEl.innerHTML.split('<br>').slice(0, 8).join('<br>');
+}
+
+// Hərfləri sadələşdir: ü→u, ı→i, ə→e, kiril → latın
+function norm(s) {
+  const map = {'ü':'u','ı':'i','ə':'e','ö':'o','ş':'s','ç':'c','ğ':'g',
+    'с':'s','у':'u','л':'l','е':'e','й':'y','м':'m','а':'a','н':'n','и':'i','ю':'yu','э':'e'};
+  return s.toLocaleLowerCase('tr').split('').map(c => map[c] ?? c).join('')
+          .replace(/[^a-z ]/g, ' ');
+}
+
+function dist(a, b) {           // Levenshtein məsafəsi
+  const d = Array.from({length:a.length+1}, (_,i)=>[i]);
+  for (let j=1;j<=b.length;j++) d[0][j]=j;
+  for (let i=1;i<=a.length;i++) for (let j=1;j<=b.length;j++)
+    d[i][j]=Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return d[a.length][b.length];
+}
+
+// Təxmini uyğunluq: "Süleyman", "Suleyman", "Süleymanı", "Sulejman", "Suleiman"...
+function hasName(text) {
+  const t = norm(text);
+  if (/s[aeiu]?l[aeiy]{1,2}man/.test(t.replace(/ /g,''))) return true;
+  return t.split(/\s+/).some(w => w.length >= 6 &&
+    ['suleyman','sulejman','suleiman','suliman','sileyman'].some(n => dist(w.slice(0, n.length), n) <= 2));
+}
+
+function ensureAudio() {
+  audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function beep() {
+  ensureAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'square';
+  osc.frequency.value = 1000;
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.4);
+  document.body.classList.remove('flash'); void document.body.offsetWidth;
+  document.body.classList.add('flash');
+  if (navigator.vibrate) navigator.vibrate(200);
+}
+
+function hit() {
+  const now = Date.now();
+  if (now - lastBeep < 1200) return;   // eyni sözə iki dəfə bip verməsin
+  lastBeep = now;
+  count++; countEl.textContent = count;
+  beep();
+}
+
+const errors = {
+  'not-allowed': 'Mikrofona icazə verilməyib. Ünvan sətrindəki 🔒/🎤 işarəsinə basıb mikrofonu "İcazə ver" edin.',
+  'service-not-allowed': 'Brauzer səs tanımaya icazə vermir. Google Chrome istifadə edin.',
+  'language-not-supported': 'Bu dil dəstəklənmir — "Türkcə" seçib yenidən başladın.',
+  'network': 'İnternet bağlantısı yoxdur (səs tanıma internet tələb edir).',
+  'audio-capture': 'Mikrofon tapılmadı.',
+  'no-speech': 'Səs eşidilmədi, yenidən dinləyirəm...'
+};
+
+function start() {
+  if (!SR) { statusEl.textContent = '❌ Bu brauzer səs tanımanı dəstəkləmir. Kompüterdə Google Chrome istifadə edin.'; return; }
+  ensureAudio();
+  rec = new SR();
+  rec.lang = document.getElementById('lang').value;
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.maxAlternatives = 5;
+
+  rec.onstart = () => { statusEl.textContent = '🎤 Dinləyirəm... (' + rec.lang + ')'; };
+  rec.onresult = (e) => {
+    let shown = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const res = e.results[i];
+      shown += res[0].transcript;
+      for (let k = 0; k < res.length; k++) {
+        if (hasName(res[k].transcript)) { hit(); break; }
+      }
+      if (res.isFinal) log('Eşidildi: "' + res[0].transcript + '"');
+    }
+    heardEl.textContent = '🗣 ' + shown;
+  };
+  rec.onerror = (e) => {
+    statusEl.textContent = '⚠️ ' + (errors[e.error] || ('Xəta: ' + e.error));
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'language-not-supported') stop(true);
+  };
+  rec.onend = () => { if (listening) { try { rec.start(); } catch(_){} } };
+
+  try { rec.start(); } catch (err) { statusEl.textContent = 'Xəta: ' + err.message; return; }
+  listening = true;
+  btn.textContent = '■ Dayandır'; btn.className = 'stop';
+}
+
+function stop(keepStatus) {
+  listening = false;
+  if (rec) rec.stop();
+  btn.textContent = '▶ Başla'; btn.className = '';
+  if (!keepStatus) statusEl.textContent = 'Dayandırılıb';
+}
+
+btn.onclick = () => listening ? stop() : start();
+document.getElementById('test').onclick = beep;
+</script>
+</body>
+</html>
