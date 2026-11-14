@@ -7,251 +7,238 @@
 <meta name="description" content="Dostlarla onlayn Ad Soyad Şəhər Əşya Heyvan oyunu. Çarxı fırlat, hərfi tap, yaz!">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
   :root{
-    --ink:#1f2d63; --ink2:#3a4a8a; --red:#d2363b; --line:#b4cfe9; --margin:#f0a3a3;
-    --paper:#fffdf5; --desk:#d9cfb8; --yellow:#fff08a; --pink:#ffc9dc; --blue:#c6e6ff; --green:#cdf2c2;
+    --ink:#22305f; --soft:#6b7499; --red:#d23b3f; --line:#d5e3f1; --margin:#f2b3b3;
+    --paper:#fffdf7; --desk:#ebe5d6; --hl:#fff3a3; --green:#2f8f5b;
+    --hand:'Caveat','Segoe Print','Comic Sans MS',cursive;
+    --ui:'Nunito',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   }
   *{box-sizing:border-box}
   html,body{margin:0}
-  body{
-    font-family:'Caveat','Segoe Print','Comic Sans MS',cursive;
-    font-size:23px; color:var(--ink); line-height:32px;
-    background:var(--desk);
-    background-image:radial-gradient(rgba(0,0,0,.05) 1px,transparent 1px);
-    background-size:6px 6px;
-    min-height:100vh; padding:14px 8px 40px;
-  }
-  .sheet{
-    position:relative; max-width:900px; margin:0 auto; min-height:calc(100vh - 60px);
-    padding:16px 22px 48px 78px;
-    background-color:var(--paper);
-    background-image:
-      linear-gradient(90deg,transparent 58px,var(--margin) 58px,var(--margin) 60px,transparent 60px),
-      repeating-linear-gradient(180deg,transparent 0 31px,var(--line) 31px 32px);
-    background-position:0 8px;
-    box-shadow:0 1px 1px rgba(0,0,0,.15),0 10px 0 -5px #f6f2e4,0 10px 1px -4px rgba(0,0,0,.15),0 20px 0 -10px #efe9d6,0 20px 1px -9px rgba(0,0,0,.15),0 18px 40px rgba(0,0,0,.18);
-    border-radius:2px 2px 4px 4px;
-  }
-  .sheet::before{ /* dəlik-dəlik dəftər kənarı */
-    content:""; position:absolute; left:18px; top:0; bottom:0; width:20px;
-    background:radial-gradient(circle at 10px 10px,var(--desk) 7px,rgba(0,0,0,.18) 8px,transparent 9px) 0 40px/20px 110px repeat-y;
-  }
-  h1{font-size:44px; line-height:64px; margin:0 0 0; font-weight:700; letter-spacing:.5px}
-  h1 .dot{color:var(--red)}
-  h2{font-size:34px; line-height:64px; margin:0; font-weight:700}
-  p{margin:0 0 32px}
-  .sub{color:var(--ink2); margin:0 0 32px; font-size:22px}
+  body{font-family:var(--ui); font-size:17px; color:var(--ink); background:var(--desk); padding:20px 12px 40px; min-height:100vh}
   [hidden]{display:none!important}
 
-  /* Əl ilə çəkilmiş düymələr */
-  button,.btn{
-    font:inherit; font-weight:700; font-size:24px; color:var(--ink); cursor:pointer;
-    background:var(--yellow); padding:4px 20px; line-height:30px; min-height:44px;
-    border:2.5px solid var(--ink);
-    border-radius:255px 15px 225px 15px/15px 225px 15px 255px;
-    box-shadow:2px 3px 0 var(--ink); transition:transform .08s, box-shadow .08s;
+  /* Dəftər vərəqi */
+  .sheet{
+    max-width:760px; margin:0 auto; position:relative;
+    padding:22px 28px 40px 76px;
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(90deg,transparent 54px,var(--margin) 54px,var(--margin) 56px,transparent 56px),
+      repeating-linear-gradient(180deg,transparent 0 35px,var(--line) 35px 36px);
+    border-radius:4px;
+    box-shadow:0 1px 2px rgba(0,0,0,.08),0 12px 30px rgba(60,50,20,.12);
+    min-height:calc(100vh - 60px);
   }
-  button:hover{transform:translate(-1px,-1px) rotate(-.5deg); box-shadow:3px 4px 0 var(--ink)}
-  button:active{transform:translate(2px,3px); box-shadow:0 0 0 var(--ink)}
-  button:disabled{opacity:.45; cursor:not-allowed; transform:none; box-shadow:1px 1px 0 var(--ink)}
-  button.pink{background:var(--pink)} button.blue{background:var(--blue)} button.green{background:var(--green)}
-  button.small{font-size:19px; padding:0 10px; min-height:32px; line-height:26px; box-shadow:1px 2px 0 var(--ink)}
-  button.big{font-size:32px; padding:8px 28px; min-height:58px}
+  h1{font-family:var(--hand); font-size:42px; line-height:48px; margin:0 0 18px; font-weight:700}
+  h1 span{color:var(--red)}
+  h2{font-family:var(--hand); font-size:34px; line-height:40px; margin:0 0 14px; font-weight:700}
+  p{margin:0 0 16px; line-height:1.5}
+  .muted{color:var(--soft)}
+  .center{text-align:center}
 
-  input,select{
-    font:inherit; font-size:26px; color:var(--ink); background:transparent;
-    border:none; border-bottom:2px dashed var(--ink2); outline:none; padding:0 4px; height:40px;
-    border-radius:0; min-width:0;
+  /* Düymələr */
+  button{
+    font-family:var(--ui); font-weight:800; font-size:17px; color:var(--ink); cursor:pointer;
+    background:#fff; border:2px solid var(--ink); border-radius:10px;
+    padding:10px 20px; min-height:46px; box-shadow:0 3px 0 var(--ink);
+    transition:transform .08s, box-shadow .08s;
   }
-  input:focus{border-bottom:2px solid var(--red); background:rgba(255,240,138,.35)}
-  input:disabled{color:var(--ink); opacity:1; border-bottom-style:dotted}
-  select{border:2px solid var(--ink2); border-radius:8px 3px 9px 4px; height:38px; padding:0 6px; cursor:pointer}
-  label{font-weight:700}
-  .row{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:24px}
+  button:active{transform:translateY(3px); box-shadow:0 0 0 var(--ink)}
+  button:disabled{opacity:.4; cursor:not-allowed; transform:none}
+  button.primary{background:var(--hl)}
+  button.big{font-size:20px; padding:12px 28px; min-height:54px}
+  button.link{background:none; border:none; box-shadow:none; padding:0 4px; min-height:0; color:var(--red); text-decoration:underline; font-size:15px}
 
-  .note{
-    background:var(--yellow); padding:10px 16px; box-shadow:2px 4px 10px rgba(0,0,0,.18);
-    transform:rotate(-1.5deg); position:relative; line-height:28px;
-  }
-  .note::before{ /* skotç */
-    content:""; position:absolute; top:-12px; left:50%; width:90px; height:24px; margin-left:-45px;
-    background:rgba(255,255,255,.55); border:1px solid rgba(0,0,0,.06); transform:rotate(2deg);
-  }
-  .note.pink{background:var(--pink); transform:rotate(1.2deg)}
-  .note.blue{background:var(--blue); transform:rotate(-.8deg)}
-  .note.green{background:var(--green); transform:rotate(1deg)}
+  input,select{font-family:var(--ui); font-size:18px; color:var(--ink); outline:none}
+  input.text{background:#fff; border:2px solid var(--ink); border-radius:10px; padding:0 14px; height:46px; width:100%}
+  input.text:focus{box-shadow:0 0 0 3px var(--hl)}
+  select{background:#fff; border:2px solid var(--ink); border-radius:8px; height:40px; padding:0 8px; cursor:pointer; font-weight:600}
 
-  .rules{margin-top:40px}
-  .rules ul{margin:0; padding-left:22px}
-  .pts{display:inline-block; min-width:38px; text-align:center; font-weight:700; color:var(--red);
-       border:2px solid var(--red); border-radius:50% 45% 50% 40%; line-height:26px; padding:0 4px; font-size:20px}
+  /* Giriş */
+  .card{background:#fff; border:2px solid var(--ink); border-radius:14px; padding:18px; margin-bottom:18px; max-width:440px}
+  .card label{display:block; font-weight:800; margin-bottom:8px}
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .or{max-width:440px; text-align:center; margin:4px 0 18px; color:var(--soft)}
+  #homeMsg{color:var(--red); font-weight:700; margin:0 0 16px}
+  .rules{max-width:520px; margin-top:28px}
+  .rules ul{margin:0; padding-left:20px; line-height:1.7}
+  .badge{display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:28px; padding:0 6px;
+         border-radius:14px; font-weight:800; font-size:14px; color:#fff; background:var(--red); margin-right:4px}
+  .b15{background:var(--green)} .b10{background:#3b6fc4} .b5{background:#c27a1d} .b0{background:#9aa0b8}
 
-  /* Oyun ekranı */
-  .topbar{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin:6px 0 26px}
-  .roomcode{font-size:34px; letter-spacing:4px; font-weight:700}
-  .layout{display:grid; grid-template-columns:220px minmax(0,1fr); gap:28px; align-items:start}
-  .layout>*{min-width:0}
-  .players h3{margin:0; font-size:26px}
-  .players ol{margin:6px 0 0; padding-left:26px}
-  .players li{line-height:30px}
-  .players .me{text-decoration:underline wavy var(--red) 1.5px; text-underline-offset:4px}
-  .players .off{opacity:.45}
-  .players .sc{float:right; font-weight:700}
-  .crown{font-size:18px}
+  /* Üst zolaq */
+  .bar{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+       padding-bottom:14px; margin-bottom:16px; border-bottom:2px solid var(--ink)}
+  .code{font-weight:800; letter-spacing:3px; font-size:20px; background:var(--hl); padding:2px 10px; border-radius:6px}
+  .status{font-weight:700; color:var(--soft)}
+  .status b{color:var(--ink)}
+
+  /* Oyunçular */
+  .players{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px}
+  .chip{display:inline-flex; align-items:center; gap:8px; background:#fff; border:1.5px solid #c9cfe2; border-radius:20px; padding:4px 6px 4px 12px; font-weight:700; font-size:15px}
+  .chip .sc{background:var(--ink); color:#fff; border-radius:12px; padding:0 8px; font-size:14px; line-height:22px}
+  .chip.me{border-color:var(--ink); background:var(--hl)}
+  .chip.off{opacity:.45}
 
   /* Çarx */
-  .wheelWrap{position:relative; width:min(360px,82vw); aspect-ratio:1; margin:8px auto 26px}
+  .stageMsg{text-align:center; margin-bottom:6px}
+  .wheelWrap{position:relative; width:min(330px,78vw); aspect-ratio:1; margin:22px auto 24px}
   .wheelSpin{width:100%; height:100%; transition:transform 4.3s cubic-bezier(.12,.68,.1,1)}
-  .wheelSpin svg{width:100%; height:100%; display:block; filter:drop-shadow(2px 3px 0 rgba(31,45,99,.35))}
-  .pointer{position:absolute; left:50%; top:-14px; width:0; height:0; margin-left:-16px; z-index:2;
-           border-left:16px solid transparent; border-right:16px solid transparent; border-top:34px solid var(--red);
-           filter:drop-shadow(1px 2px 0 var(--ink))}
-  .hub{position:absolute; left:50%; top:50%; width:64px; height:64px; margin:-32px 0 0 -32px; border-radius:50%;
-       background:var(--paper); border:3px solid var(--ink); display:flex; align-items:center; justify-content:center;
-       font-weight:700; font-size:38px; color:var(--red); z-index:2}
-  .seg-text{font-family:'Caveat',cursive; font-weight:700; font-size:21px; fill:#1f2d63; text-anchor:middle}
-  .seg-used{opacity:.3}
+  .wheelSpin svg{width:100%; height:100%; display:block}
+  .pointer{position:absolute; left:50%; top:-12px; margin-left:-14px; z-index:2; width:0; height:0;
+           border-left:14px solid transparent; border-right:14px solid transparent; border-top:28px solid var(--red)}
+  .hub{position:absolute; left:50%; top:50%; width:66px; height:66px; margin:-33px 0 0 -33px; border-radius:50%;
+       background:#fff; border:3px solid var(--ink); display:flex; align-items:center; justify-content:center;
+       font-family:var(--hand); font-weight:700; font-size:42px; color:var(--red); z-index:2}
+  .seg-text{font-family:var(--ui); font-weight:800; font-size:17px; fill:#22305f; text-anchor:middle}
+  .seg-used{opacity:.28}
+  .controls{display:flex; justify-content:center; align-items:center; gap:14px; flex-wrap:wrap}
+  .controls label{font-weight:700}
+  .controls .break{flex-basis:100%; height:0}
 
-  /* Oyun vərəqi */
-  .letterLine{display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin-bottom:20px}
-  .bigLetter{width:86px; height:86px; display:flex; align-items:center; justify-content:center;
-             font-size:64px; font-weight:700; color:var(--red); border:3px solid var(--red);
-             border-radius:48% 52% 45% 55%/55% 45% 55% 45%; transform:rotate(-4deg); background:rgba(255,255,255,.6)}
-  .timer{font-size:44px; font-weight:700; min-width:90px}
-  .timer.warn{color:var(--red); animation:pulse .6s infinite alternate}
-  @keyframes pulse{to{transform:scale(1.12)}}
-  .fields{display:grid; gap:0 24px; grid-template-columns:1fr 1fr; margin-bottom:28px}
-  .field{display:flex; align-items:center; gap:10px; height:64px}
-  .field label{min-width:82px; font-size:26px}
-  .field input{flex:1; width:100%}
-  .banner{font-size:28px; font-weight:700; color:var(--red); margin-bottom:20px; transform:rotate(-1deg)}
+  /* Yazı vərəqi */
+  .playHead{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:10px}
+  .letterBox{display:flex; align-items:center; gap:14px}
+  .bigLetter{width:76px; height:76px; display:flex; align-items:center; justify-content:center;
+             font-family:var(--hand); font-size:58px; font-weight:700; color:var(--red);
+             border:3px solid var(--red); border-radius:50%}
+  .timer{font-weight:800; font-size:34px; font-variant-numeric:tabular-nums; text-align:right; line-height:1}
+  .timer small{display:block; font-size:13px; color:var(--soft); font-weight:700}
+  .timer.warn{color:var(--red)}
+  .timer.frozen{color:var(--soft)}
+  .stopMsg{background:var(--hl); border-radius:10px; padding:10px 14px; font-weight:800; margin:6px 0 14px}
+  .fields{margin:8px 0 22px}
+  .field{display:flex; align-items:flex-end; gap:12px; height:72px}
+  .field label{width:84px; flex:none; font-weight:800; padding-bottom:8px}
+  .field input{
+    flex:1; min-width:0; height:48px; background:transparent; border:none; border-bottom:2px solid var(--ink);
+    font-family:var(--hand); font-size:32px; font-weight:700; padding:0 6px; color:#1d3fa8; border-radius:0;
+  }
+  .field input:focus{border-bottom-color:var(--red); background:rgba(255,243,163,.45)}
+  .field input:disabled{opacity:1; color:#1d3fa8; border-bottom-color:#c9cfe2}
 
-  /* Nəticə cədvəli */
-  .tableWrap{overflow-x:auto; margin-bottom:28px; -webkit-overflow-scrolling:touch}
-  table{border-collapse:collapse; min-width:100%; font-size:22px}
-  th,td{border:2px solid var(--ink2); padding:2px 8px; text-align:left; vertical-align:top; line-height:26px}
-  th{background:rgba(198,230,255,.5); font-size:24px}
-  td.cell{min-width:96px}
-  td.cell .w{display:block; word-break:break-word}
-  td.cell .p{font-size:18px; font-weight:700; color:var(--red)}
+  /* Nəticələr */
+  .tableWrap{overflow-x:auto; margin:0 0 14px; -webkit-overflow-scrolling:touch; background:#fff; border:2px solid var(--ink); border-radius:12px}
+  table{border-collapse:collapse; width:100%; font-size:15px}
+  th,td{padding:8px 10px; text-align:left; vertical-align:top; border-bottom:1px solid #e3e7f2}
+  tr:last-child td{border-bottom:none}
+  th{font-size:13px; text-transform:uppercase; letter-spacing:.5px; color:var(--soft); background:#f7f8fc}
+  td.name{font-weight:800; white-space:nowrap}
+  td.cell{min-width:92px}
+  td.cell .w{display:block; font-family:var(--hand); font-size:24px; font-weight:700; line-height:26px; color:#1d3fa8; word-break:break-word}
+  td.cell .badge{margin-top:2px; height:22px; min-width:24px; font-size:12px}
   td.click{cursor:pointer}
-  td.click:hover{background:rgba(255,240,138,.5)}
-  td.rej .w,td.bad .w{text-decoration:line-through 2.5px var(--red); color:#8a8fae}
-  td.same{background:rgba(255,201,220,.35)} td.solo{background:rgba(205,242,194,.5)} td.uniq{background:rgba(198,230,255,.35)}
-  td.total{font-weight:700; font-size:26px; color:var(--red); text-align:center}
-  .legend{font-size:20px; color:var(--ink2); margin-bottom:24px; line-height:28px}
+  td.click:hover{background:#fffbe0}
+  td.rej .w,td.bad .w{text-decoration:line-through 2px var(--red); color:#9aa0b8}
+  td.cell .why{display:block; font-size:11px; color:var(--red); font-weight:700; line-height:14px}
+  td.total{font-weight:800; font-size:20px; text-align:center; color:var(--red)}
+  .legend{font-size:14px; color:var(--soft); margin-bottom:18px; line-height:2}
 
-  .rank{font-size:30px; line-height:44px}
-  .rank li{margin-bottom:4px}
-  .muted{color:var(--ink2)}
+  .rank{list-style:none; padding:0; margin:0 0 22px; max-width:440px}
+  .rank li{display:flex; justify-content:space-between; align-items:center; background:#fff; border:2px solid var(--ink);
+           border-radius:12px; padding:10px 16px; margin-bottom:10px; font-weight:800; font-size:18px}
+  .rank li:first-child{background:var(--hl)}
 
-  #toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%) rotate(-1deg); z-index:50;
-         background:var(--yellow); border:2px solid var(--ink); padding:6px 18px; box-shadow:3px 4px 0 var(--ink);
-         font-weight:700; max-width:90vw; text-align:center; transition:opacity .3s; pointer-events:none}
+  #toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:50; background:var(--ink); color:#fff;
+         padding:10px 18px; border-radius:10px; font-weight:700; max-width:90vw; text-align:center; transition:opacity .3s; pointer-events:none}
   #toast.hide{opacity:0}
 
-  @media (max-width:720px){
-    body{padding:8px 4px 30px; font-size:22px}
-    .sheet{padding:10px 12px 40px 46px;
-      background-image:linear-gradient(90deg,transparent 34px,var(--margin) 34px,var(--margin) 36px,transparent 36px),
-      repeating-linear-gradient(180deg,transparent 0 31px,var(--line) 31px 32px)}
-    .sheet::before{left:6px}
-    h1{font-size:34px; line-height:40px; margin:8px 0 16px}
-    .layout{grid-template-columns:1fr; gap:18px}
-    .fields{grid-template-columns:1fr}
-    .field{height:58px}
-    .bigLetter{width:72px; height:72px; font-size:54px}
+  @media (max-width:640px){
+    body{padding:0}
+    .sheet{padding:16px 14px 40px 40px; border-radius:0; min-height:100vh;
+      background-image:linear-gradient(90deg,transparent 26px,var(--margin) 26px,var(--margin) 28px,transparent 28px),
+      repeating-linear-gradient(180deg,transparent 0 35px,var(--line) 35px 36px)}
+    h1{font-size:34px; line-height:38px}
+    .field label{width:66px; font-size:15px}
+    .field input{font-size:28px}
+    .bigLetter{width:64px; height:64px; font-size:48px}
   }
 </style>
 </head>
 <body>
 <div class="sheet">
-  <h1>Ad <span class="dot">·</span> Soyad <span class="dot">·</span> Şəhər <span class="dot">·</span> Əşya <span class="dot">·</span> Heyvan</h1>
+  <h1>Ad <span>·</span> Soyad <span>·</span> Şəhər <span>·</span> Əşya <span>·</span> Heyvan</h1>
 
   <!-- GİRİŞ -->
   <section id="home">
-    <p class="sub">Dostlarınla onlayn oyna: çarxı fırlat, hərf gəlsin, hamı yazsın!</p>
-    <div class="row">
-      <label for="myName">Adın:</label>
-      <input id="myName" maxlength="16" placeholder="məs. Rəşad" autocomplete="nickname">
+    <p class="muted">Dostlarınla onlayn oyna: çarx fırlanır, hərf gəlir, hamı yazır.</p>
+    <div class="card">
+      <label for="myName">Adın</label>
+      <input id="myName" class="text" maxlength="16" placeholder="məs. Rəşad" autocomplete="nickname">
     </div>
-    <div class="row">
-      <button id="btnCreate" class="big">✏️ Otaq yarat</button>
+    <div class="card">
+      <button id="btnCreate" class="primary big" style="width:100%">Yeni otaq yarat</button>
     </div>
-    <p class="muted">— və ya dostunun otağına qoşul —</p>
-    <div class="row">
-      <input id="joinCode" maxlength="5" placeholder="OTAQ KODU" style="width:170px; text-transform:uppercase; letter-spacing:3px">
-      <button id="btnJoin" class="blue">Qoşul</button>
+    <div class="or">və ya dostunun otağına qoşul</div>
+    <div class="card">
+      <label for="joinCode">Otaq kodu</label>
+      <div class="row" style="flex-wrap:nowrap">
+        <input id="joinCode" class="text" maxlength="5" placeholder="ABC12" style="text-transform:uppercase; letter-spacing:3px; font-weight:800">
+        <button id="btnJoin">Qoşul</button>
+      </div>
     </div>
-    <div id="homeMsg" class="banner" hidden></div>
+    <p id="homeMsg" hidden></p>
 
-    <div class="rules note pink">
+    <div class="rules">
       <h2>Qaydalar</h2>
       <ul>
-        <li>Ev sahibi çarxı fırladır, bir hərf gəlir (məs. <b>R</b>).</li>
-        <li>Hamı həmin hərflə başlayan <b>ad, soyad, şəhər, əşya, heyvan</b> yazır.</li>
-        <li>Hamısını dolduran <b>“Bitirdim!”</b> deyə bilər — qalanlara 5 saniyə qalır.</li>
-        <li><span class="pts">5</span> eyni sözü başqası da yazıbsa</li>
-        <li><span class="pts">10</span> hər kəs fərqli söz yazıbsa</li>
-        <li><span class="pts">15</span> o sütunda yalnız sən yazmısansa</li>
-        <li>Yanlış söz — <span class="pts">0</span>. Ev sahibi sözün üstünə toxunub onu xətləyə bilər.</li>
+        <li>Ev sahibi çarxı fırladır, bir hərf gəlir.</li>
+        <li>Hamı həmin hərflə <b>ad, soyad, şəhər, əşya, heyvan</b> yazır.</li>
+        <li>Hamısını ilk dolduran <b>“Bitirdim!”</b> basır — vaxt dərhal dayanır, kim nə yazıbsa o hesablanır.</li>
+        <li><span class="badge b15">15</span> o xanaya yalnız sən yazmısan</li>
+        <li><span class="badge b10">10</span> sözün başqalarınınkından fərqlidir</li>
+        <li><span class="badge b5">5</span> eyni sözü başqası da yazıb</li>
+        <li><span class="badge b0">0</span> boş, səhv hərf, lüğətdə olmayan və ya xətlənmiş söz</li>
+        <li>Hər söz Azərbaycan dili lüğəti ilə yoxlanır (ad, şəhər, heyvan — ayrıca siyahılarla). Tək hərf qəbul olunmur.</li>
       </ul>
     </div>
   </section>
 
   <!-- OYUN -->
   <section id="game" hidden>
-    <div class="topbar">
-      <div class="note">
-        Otaq kodu: <span class="roomcode" id="roomCode">-----</span><br>
-        <button class="small" id="btnShare">🔗 dəvət linki</button>
+    <div class="bar">
+      <div class="row">Otaq <span class="code" id="roomCode">-----</span> <button class="link" id="btnShare">dəvət et</button></div>
+      <div class="status" id="status"></div>
+    </div>
+    <div class="players" id="players"></div>
+
+    <!-- Lobbi / çarx -->
+    <div id="wheelBox">
+      <div id="lobbyMsg" class="stageMsg"></div>
+      <div class="wheelWrap">
+        <div class="pointer"></div>
+        <div class="wheelSpin" id="wheelSpin"></div>
+        <div class="hub" id="hub">?</div>
       </div>
-      <div id="roundInfo" class="note blue"></div>
+      <div id="wheelCtl" class="controls"></div>
     </div>
 
-    <div class="layout">
-      <aside class="players note green" id="players"></aside>
-
-      <main>
-        <!-- Lobbi / çarx -->
-        <div id="wheelBox">
-          <div id="lobbyMsg"></div>
-          <div class="wheelWrap">
-            <div class="pointer"></div>
-            <div class="wheelSpin" id="wheelSpin"></div>
-            <div class="hub" id="hub">?</div>
-          </div>
-          <div id="wheelCtl" class="row" style="justify-content:center"></div>
+    <!-- Yazı vərəqi -->
+    <div id="playBox" hidden>
+      <div class="playHead">
+        <div class="letterBox">
+          <div class="bigLetter" id="bigLetter">R</div>
+          <div class="muted" style="font-weight:700; line-height:1.3">ilə başlayan<br>sözlər yaz</div>
         </div>
-
-        <!-- Yazı vərəqi -->
-        <div id="playBox" hidden>
-          <div class="letterLine">
-            <div class="bigLetter" id="bigLetter">R</div>
-            <div>
-              <div class="timer" id="timer">90</div>
-              <div class="muted" style="font-size:20px; line-height:22px">saniyə</div>
-            </div>
-          </div>
-          <div id="stopBanner" class="banner" hidden></div>
-          <div class="fields" id="fields"></div>
-          <div class="row">
-            <button id="btnFinish" class="pink big" disabled>✋ Bitirdim!</button>
-          </div>
-        </div>
-
-        <!-- Nəticələr -->
-        <div id="reviewBox" hidden></div>
-
-        <!-- Final -->
-        <div id="finalBox" hidden></div>
-      </main>
+        <div class="timer" id="timer">90<small>saniyə</small></div>
+      </div>
+      <div id="stopBanner" class="stopMsg" hidden></div>
+      <div class="fields" id="fields"></div>
+      <button id="btnFinish" class="primary big" style="width:100%" disabled>✋ Bitirdim!</button>
     </div>
+
+    <!-- Nəticələr -->
+    <div id="reviewBox" hidden></div>
+
+    <!-- Final -->
+    <div id="finalBox" hidden></div>
   </section>
 </div>
+<p class="muted" style="text-align:center; font-size:12px; margin-top:14px">Lüğət: <a href="https://github.com/mozillaz/spellchecker" style="color:inherit">Mozilla Azərbaycan</a> (MPL-2.0)</p>
 <div id="toast" class="hide"></div>
 
 <script>
@@ -271,7 +258,36 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const lower = s => s.toLocaleLowerCase('az');
 const norm = s => lower(String(s || '').trim().replace(/\s+/g, ' '));
-const key = s => norm(s).replace(/ı/g, 'i');      // I/İ fərqini müqayisədə bağışlayırıq
+const key = s => norm(s).replace(/ı/g, 'i').replace(/[-\s'’`]/g, '');   // I/İ, defis və boşluq fərqini bağışlayırıq
+
+/* ---------- Lüğət yoxlaması ---------- */
+let LUGAT = null;
+function loadLugat(){
+  return fetch('lugat.json').then(r => r.json()).then(d => {
+    LUGAT = {};
+    for (const k of ['soz','ad','seher','heyvan']) LUGAT[k] = new Set(d[k].map(key));
+  }).catch(() => { LUGAT = null; toast('Lüğət yüklənmədi — sözlər yalnız hərfə görə yoxlanacaq', 4000); });
+}
+const SURNAME_SUFFIX = ['bəyova','bəyov','bəyli','xanlı','zadə','oğlu','yeva','ova','eva','yev','ov','ev','li','lı','lu','lü'];
+function inDict(cat, w){
+  const k = key(w);
+  if (k.length < 2) return false;
+  if (!LUGAT) return true;
+  if (cat === 'ad') return LUGAT.ad.has(k);
+  if (cat === 'seher') return LUGAT.seher.has(k);
+  if (cat === 'heyvan') return LUGAT.heyvan.has(k);
+  if (cat === 'esya') return LUGAT.soz.has(k);
+  if (cat === 'soyad'){
+    for (const suf of SURNAME_SUFFIX){
+      if (k.length > suf.length + 1 && k.endsWith(suf)){
+        const stem = k.slice(0, -suf.length);
+        if (LUGAT.ad.has(stem) || LUGAT.soz.has(stem) || LUGAT.seher.has(stem)) return true;
+      }
+    }
+    return false;
+  }
+  return true;
+}
 function startsWith(word, letter){
   const f = norm(word)[0], l = lower(letter);
   if (!f) return false;
@@ -382,6 +398,7 @@ function createRoom(){
   const name = getName(); if (!name) return;
   if (typeof Peer === 'undefined'){ homeMsg('Şəbəkə kitabxanası yüklənmədi. İnterneti yoxla və səhifəni yenilə.'); return; }
   lockHome(true); homeMsg('Otaq hazırlanır...');
+  if (!LUGAT) loadLugat();
   const code = newCode();
   peer = new Peer(PREFIX + code);
   peer.on('open', () => {
@@ -436,7 +453,7 @@ function joinRoom(){
 let lost = false;
 function lostHost(){
   if (lost) return; lost = true;
-  $('#roundInfo').innerHTML = '<b style="color:var(--red)">Ev sahibi ilə əlaqə kəsildi.</b><br><button class="small" onclick="location.reload()">Yenidən qoşul</button>';
+  $('#status').innerHTML = '<b style="color:var(--red)">Əlaqə kəsildi</b> <button class="link" onclick="location.reload()">yenidən qoşul</button>';
   toast('Əlaqə kəsildi', 4000);
 }
 
@@ -482,9 +499,8 @@ function hostHandle(pid, m){
   else if (m.t === 'finish'){
     if (H.phase !== 'playing') return;
     const p = H.players.find(p => p.id === pid);
-    H.phase = 'stopping'; H.stopBy = p ? p.name : '?';
-    startTimer(STOP_MS, endRound);
-    commit();
+    H.stopBy = p ? p.name : '?';
+    endRound();
   }
 }
 function startTimer(ms, cb){
@@ -504,7 +520,7 @@ function hostSpin(){
   const jitter = (Math.random() - .5) * a * .6;
   H.spin = { id:Date.now() + Math.random(), rot: prev + 360 * 6 + target + jitter };
   H.round += 1; H.letter = L; H.used.push(L);
-  H.answers = {}; H.override = {}; H.results = null; H.stopBy = null;
+  H.answers = {}; H.override = {}; H.results = null; H.stopBy = null; H.frozen = null;
   H.roundPlayers = H.players.filter(p => p.online).map(p => p.id);
   H.phase = 'spinning'; H.timer = null; clearTimeout(hostTimer);
   commit();
@@ -516,6 +532,7 @@ function hostSpin(){
 }
 function endRound(){
   if (!['playing','stopping'].includes(H.phase)) return;
+  H.frozen = Math.max(0, Math.ceil((hostEnd - Date.now()) / 1000));
   H.phase = 'collecting'; H.timer = null; clearTimeout(hostTimer);
   commit();
   hostTimer = setTimeout(() => { computeResults(); H.phase = 'review'; commit(); }, COLLECT_MS);
@@ -529,11 +546,12 @@ function computeResults(){
     for (const id of ids){
       const w = ((H.answers[id] || {})[k] || '').trim();
       const ov = !!H.override[id + '|' + k];
-      let st;
+      let st, why = '';
       if (!w) st = 'empty';
-      else if (!startsWith(w, H.letter)) st = ov ? 'ok' : 'bad';
-      else st = ov ? 'rej' : 'ok';
-      cells[id][k] = { w, st, p:0 };
+      else if (!startsWith(w, H.letter)){ st = ov ? 'ok' : 'bad'; why = 'hərf səhv'; }
+      else if (!inDict(k, w)){ st = ov ? 'ok' : 'bad'; why = 'lüğətdə yoxdur'; }
+      else { st = ov ? 'rej' : 'ok'; if (ov) why = 'xətləndi'; }
+      cells[id][k] = { w, st, p:0, why };
       if (st === 'ok') valid.push(id);
     }
     const groups = {};
@@ -614,14 +632,12 @@ function render(){
   if (!S) return;
   const me = S.players.find(p => p.id === myId);
   // Tur məlumatı
-  if (!lost) $('#roundInfo').innerHTML =
-    `<b>${PH_TEXT[S.phase] || ''}</b><br>Tur: ${S.round || 0} / ${S.totalRounds} &nbsp;·&nbsp; ⏱ ${S.timeLimit} san`;
+  if (!lost) $('#status').innerHTML = `Tur <b>${S.round || 0}/${S.totalRounds}</b> · ${PH_TEXT[S.phase] || ''}`;
 
   // Oyunçular
   const sorted = S.players.slice().sort((a,b) => b.score - a.score);
-  $('#players').innerHTML = `<h3>Oyunçular (${S.players.filter(p=>p.online).length})</h3><ol>` +
-    sorted.map(p => `<li class="${p.id === myId ? 'me' : ''} ${p.online ? '' : 'off'}">
-      ${p.host ? '<span class="crown">👑</span>' : ''}${esc(p.name)}<span class="sc">${p.score}</span></li>`).join('') + '</ol>';
+  $('#players').innerHTML = sorted.map(p =>
+    `<span class="chip ${p.id === myId ? 'me' : ''} ${p.online ? '' : 'off'}">${p.host ? '👑 ' : ''}${esc(p.name)}<span class="sc">${p.score}</span></span>`).join('');
 
   const ph = S.phase;
   const showWheel = ['lobby','ready','spinning'].includes(ph);
@@ -634,18 +650,18 @@ function render(){
   if (showWheel){
     let msg = '', ctl = '';
     if (ph === 'lobby'){
-      msg = `<p class="sub">Dostlarına otaq kodunu <b>${esc(roomCode)}</b> göndər və ya dəvət linkini paylaş.</p>`;
+      msg = `<p class="muted">Dostlarına <b>${esc(roomCode)}</b> kodunu göndər və ya “dəvət et” linkini paylaş.</p>`;
       if (isHost){
         ctl = `<label>Tur sayı: <select id="setRounds">${[3,5,7,10,15].map(n=>`<option ${n===S.totalRounds?'selected':''}>${n}</option>`).join('')}</select></label>
                <label>Vaxt: <select id="setTime">${[45,60,90,120,180].map(n=>`<option value="${n}" ${n===S.timeLimit?'selected':''}>${n} san</option>`).join('')}</select></label>
-               <div style="flex-basis:100%"></div>
-               <button class="big" id="btnSpin">🎡 Çarxı fırlat</button>`;
+               <div class="break"></div>
+               <button class="primary big" id="btnSpin">Çarxı fırlat</button>`;
       } else ctl = `<p class="muted">Ev sahibinin çarxı fırlatmasını gözlə...</p>`;
     } else if (ph === 'ready'){
-      msg = `<p class="sub">${S.round}-ci tur bitdi. Növbəti hərf üçün çarx hazırdır!</p>`;
-      ctl = isHost ? `<button class="big" id="btnSpin">🎡 Çarxı fırlat</button>` : `<p class="muted">Ev sahibi çarxı fırladacaq...</p>`;
+      msg = `<p class="muted">${S.round}-ci tur bitdi. Növbəti hərf üçün çarx hazırdır.</p>`;
+      ctl = isHost ? `<button class="primary big" id="btnSpin">Çarxı fırlat</button>` : `<p class="muted">Ev sahibi çarxı fırladacaq...</p>`;
     } else if (ph === 'spinning'){
-      msg = `<p class="sub">Hansı hərf gələcək? 🤞</p>`;
+      msg = `<p class="muted">Hansı hərf gələcək?</p>`;
       setTimeout(() => { if (S && S.phase === 'spinning') $('#hub').textContent = S.letter; }, SPIN_MS - 400);
     }
     if (ph !== 'spinning') $('#hub').textContent = S.letter || '?';
@@ -665,8 +681,7 @@ function render(){
       i.placeholder = editable ? S.letter + '...' : '';
     });
     const sb = $('#stopBanner');
-    if (ph === 'stopping'){ sb.hidden = false; sb.textContent = `✋ ${S.stopBy} bitirdi! Tez yaz!`; }
-    else if (ph === 'collecting'){ sb.hidden = false; sb.textContent = '✏️ Qələmlər yerə! Vərəqlər toplanır...'; }
+    if (ph === 'collecting'){ sb.hidden = false; sb.textContent = S.stopBy ? `✋ ${S.stopBy} bitirdi — vaxt dayandı! Xallar hesablanır...` : '⏰ Vaxt bitdi! Xallar hesablanır...'; }
     else sb.hidden = true;
     $('#btnFinish').hidden = ph !== 'playing';
     updateFinishBtn();
@@ -680,25 +695,27 @@ function render(){
 function renderReview(){
   const R = S.results; if (!R) return;
   const name = id => { const p = S.players.find(p => p.id === id); return p ? p.name : '?'; };
-  const label = { solo:'tək', uniq:'fərqli', same:'eyni', bad:'hərf səhv', rej:'xətləndi', empty:'' };
-  let h = `<h2>Hərf: <span style="color:var(--red)">${esc(S.letter)}</span> — nəticələr</h2>
+  const bc = p => 'b' + p;
+  let h = `<h2>“${esc(S.letter)}” hərfi — nəticələr</h2>
+    ${S.stopBy ? `<p class="muted">✋ <b>${esc(S.stopBy)}</b> bitirdi, vaxt ${S.frozen} saniyədə dayandı.</p>` : `<p class="muted">⏰ Vaxt bitdi.</p>`}
     <div class="tableWrap"><table><thead><tr><th>Oyunçu</th>${CATS.map(([,l])=>`<th>${l}</th>`).join('')}<th>Cəm</th></tr></thead><tbody>`;
   for (const id of R.ids){
-    h += `<tr><td><b>${esc(name(id))}</b></td>`;
+    h += `<tr><td class="name">${esc(name(id))}</td>`;
     for (const [k] of CATS){
       const c = R.cells[id][k];
       const cls = ['cell', c.st, isHost && c.st !== 'empty' ? 'click' : ''].join(' ');
       h += `<td class="${cls}" data-id="${esc(id)}" data-k="${k}">
         <span class="w">${c.w ? esc(c.w) : '<span class="muted">—</span>'}</span>
-        ${c.st !== 'empty' ? `<span class="p">${c.p} · ${label[c.st]}</span>` : ''}</td>`;
+        ${c.st !== 'empty' ? `<span class="badge ${bc(c.p)}">${c.p}</span>` : ''}${c.why ? `<span class="why">${c.why}</span>` : ''}</td>`;
     }
     h += `<td class="total">${R.totals[id] || 0}</td></tr>`;
   }
   h += `</tbody></table></div>
-    <div class="legend">🟩 tək yazan — 15 &nbsp; 🟦 fərqli — 10 &nbsp; 🩷 eyni — 5 &nbsp; ❌ səhv — 0<br>
-    ${isHost ? 'Yanlış sözün üstünə toxun — xətlənəcək (0 xal). Yenidən toxunsan, geri qaytarılır.' : 'Ev sahibi yanlış sözləri xətləyə bilər.'}</div>`;
+    <div class="legend"><span class="badge b15">15</span>tək &nbsp; <span class="badge b10">10</span>fərqli &nbsp; <span class="badge b5">5</span>eyni &nbsp; <span class="badge b0">0</span>boş / səhv<br>
+    Sözlər Azərbaycan dili lüğəti, adlar, şəhərlər və heyvanlar siyahısı ilə avtomatik yoxlanır.<br>
+    ${isHost ? 'Səhv qəbul olunan sözə toxunsan, xətlənir (0 xal). Lüğətdə olmayan, amma düzgün sözə toxunsan, qəbul olunur.' : 'Ev sahibi səhv sözləri xətləyə, lüğətdə olmayan düzgün sözləri qəbul edə bilər.'}</div>`;
   h += isHost
-    ? `<div class="row"><button class="green big" id="btnConfirm">✔ Xalları yaz${S.round >= S.totalRounds ? ' və bitir' : ' və davam et'}</button></div>`
+    ? `<div class="row"><button class="primary big" id="btnConfirm">✔ Xalları yaz${S.round >= S.totalRounds ? ' və bitir' : ' və davam et'}</button></div>`
     : `<p class="muted">Ev sahibi xalları təsdiqləyir...</p>`;
   $('#reviewBox').innerHTML = h;
   if (isHost){
@@ -710,15 +727,12 @@ function renderReview(){
 function renderFinal(){
   const sorted = S.players.slice().sort((a,b) => b.score - a.score);
   const medal = ['🥇','🥈','🥉'];
-  let h = `<h2>🏆 Oyun bitdi!</h2>
-    <div class="note" style="margin:16px 0 32px; transform:rotate(-1deg)">
-      <ol class="rank" style="list-style:none; padding:0; margin:0">` +
-      sorted.map((p,i) => `<li>${medal[i] || (i+1)+'.'} <b>${esc(p.name)}</b> — ${p.score} xal</li>`).join('') +
-    `</ol></div>`;
-  if (sorted[0]) h += `<p class="banner">Təbriklər, ${esc(sorted[0].name)}! 🎉</p>`;
+  let h = `<h2>🏆 Oyun bitdi!</h2>`;
+  if (sorted[0]) h += `<p>Təbriklər, <b>${esc(sorted[0].name)}</b>! 🎉</p>`;
+  h += `<ol class="rank">` + sorted.map((p,i) => `<li><span>${medal[i] || (i+1)+'.'} ${esc(p.name)}</span><span>${p.score} xal</span></li>`).join('') + `</ol>`;
   h += isHost
-    ? `<div class="row"><label>Tur sayı: <select id="setRounds2">${[3,5,7,10,15].map(n=>`<option ${n===S.totalRounds?'selected':''}>${n}</option>`).join('')}</select></label>
-       <button class="big" id="btnNew">🔄 Yeni oyun</button></div>`
+    ? `<div class="row"><label style="font-weight:700">Tur sayı: <select id="setRounds2">${[3,5,7,10,15].map(n=>`<option ${n===S.totalRounds?'selected':''}>${n}</option>`).join('')}</select></label>
+       <button class="primary big" id="btnNew">Yeni oyun</button></div>`
     : `<p class="muted">Ev sahibi yeni oyun başlada bilər.</p>`;
   $('#finalBox').innerHTML = h;
   if (isHost){
@@ -730,11 +744,14 @@ function renderFinal(){
 function tick(){
   if (!S) return;
   const t = $('#timer');
+  let v = '', cls = '';
   if (S.timer && ['playing','stopping'].includes(S.phase)){
     const left = Math.max(0, Math.ceil((localEnd - Date.now()) / 1000));
-    t.textContent = left;
-    t.classList.toggle('warn', left <= 10);
-  } else if (S.phase === 'collecting'){ t.textContent = '0'; t.classList.remove('warn'); }
+    v = left; cls = left <= 10 ? 'warn' : '';
+  } else if (S.phase === 'collecting'){ v = S.frozen ?? 0; cls = 'frozen'; }
+  else return;
+  t.className = 'timer ' + cls;
+  t.innerHTML = `${v}<small>${cls === 'frozen' ? 'dayandı' : 'saniyə'}</small>`;
 }
 setInterval(tick, 250);
 
